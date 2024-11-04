@@ -6,9 +6,10 @@ uniform sampler2D dispTex;
 uniform float displacementStr; // 0.3; 
 uniform float verticalStrength; // 2.0
 uniform vec2 scrollSpeed; // 0.4,-1
+uniform vec2 displacementUVScale;
 
 void main()	{
-    vec2 uvScrolled = vUv + scrollSpeed * Time;
+    vec2 uvScrolled = (vUv * displacementUVScale) + scrollSpeed * Time;
 
     vec2 disp = texture2D(dispTex, uvScrolled).xy;
 
