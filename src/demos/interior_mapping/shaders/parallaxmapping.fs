@@ -35,6 +35,10 @@ vec3 ParralaxMap(){
     );
 
 
+#ifdef OUTPUT_RED
+    return vec3(1,0,0);
+#endif
+
     return textureCube(tCube, pos).rgb;
 }
 

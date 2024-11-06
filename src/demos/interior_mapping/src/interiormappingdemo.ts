@@ -21,9 +21,7 @@ import SceneBase from '../../../SceneBase';
  */
 export default class InteriorMappingScene extends SceneBase{
    
-    recieveMessage(call: string, args: any) {
-        throw new Error('Method not implemented.');
-    }
+    
 
     // A dat.gui class debugger that is added by default
     debugger: GUI = null;
@@ -45,6 +43,7 @@ export default class InteriorMappingScene extends SceneBase{
 
     cube: THREE.Mesh;
 
+    currentPage = 0;
 
 
     initialize(debug: boolean = true, addGridHelper: boolean = true){
@@ -102,6 +101,9 @@ export default class InteriorMappingScene extends SceneBase{
             },
             vertexShader: VertexShader,
             fragmentShader:FragmentShader,
+            defines:{
+                OUTPUT_RED: false
+            }
         })
 
         let cube = new THREE.Mesh(geometry, this.material);
@@ -138,6 +140,8 @@ export default class InteriorMappingScene extends SceneBase{
             // cubeGroup.add(cube.position, 'y', .5, 10);
             // cubeGroup.add(cube.position, 'z', -10, 10);
             // cubeGroup.open();
+
+            materialSettingsGroup.add(this.material.defines,"OUTPUT_RED");
         }
     }
 
@@ -145,7 +149,7 @@ export default class InteriorMappingScene extends SceneBase{
         this.camera.updateProjectionMatrix();
         this.renderer.render(this, this.camera);
         
-
+        this.material.needsUpdate = true;
         
 
         if(this.cube){
@@ -153,6 +157,39 @@ export default class InteriorMappingScene extends SceneBase{
             //this.cube.rotateY(0.01);
         }
     }
+
+    changeState(pageIndex:number)
+    {
+        if(pageIndex == this.currentPage)
+        {
+            return;
+        }
+
+        //Exit state
+        switch(this.currentPage){
+            case 0:{
+                break;
+            }
+            default:{
+                break;
+            }
+        }
+
+        this.currentPage = pageIndex;
+        switch(this.currentPage){
+            case 0:{
+                break;
+            }
+            default:{
+                break;
+            }
+        }
+    }
+
+    recieveMessage(call: string, args: any) {
+        this[call](args);
+    }
+
 
     /**
      * Given a ThreeJS camera and renderer, resizes the scene if the
