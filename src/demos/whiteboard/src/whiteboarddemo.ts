@@ -50,7 +50,7 @@ export default class WhiteboardDemoScene extends SceneBase {
     initialize(debug: boolean = true, addGridHelper: boolean = true) {
         // setup camera
         this.camera = new THREE.PerspectiveCamera(35, this.width / this.height, .1, 100);
-        this.camera.position.z = 4;
+        this.camera.position.z = 8;
         this.camera.position.y = 0;
         this.camera.position.x = 0;
         this.camera.lookAt(0, 0, 0);
@@ -212,8 +212,8 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.renderer.render(this, this.camera);
 
         if (this.cube) {
-            // this.cube.translateX(0.1)
-            //this.rtCube.rotateY(0.01);
+            this.cube.rotateY(0.01)
+            this.rtCube.rotateY(0.01);
         }
 
 
