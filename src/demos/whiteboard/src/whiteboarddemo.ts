@@ -16,20 +16,15 @@ export default class WhiteboardDemoScene extends SceneBase {
     debugger: GUI = null;
 
     camera: THREE.PerspectiveCamera = null;
-
-    // setup renderer
     renderer: THREE.WebGLRenderer = null;
-
-    // setup Orbitals
     orbitals: OrbitControls = null;
-
     material: THREE.Material = null;
 
     // Get some basic params
     width = window.innerWidth;
     height = window.innerHeight;
 
-    cube: THREE.Mesh;
+    visibleModel: THREE.Mesh;
 
     currentPage = 0;
 
@@ -37,7 +32,7 @@ export default class WhiteboardDemoScene extends SceneBase {
     rtCamera: THREE.Camera;
     rtScene: THREE.Scene;
 
-    rtCube: THREE.Mesh;
+    paintableSurface: THREE.Mesh;
     sphere: THREE.Mesh;
     raycaster: THREE.Raycaster;
     pickPosition = { x: 0, y: 0 };
@@ -45,15 +40,15 @@ export default class WhiteboardDemoScene extends SceneBase {
     brushPos = new THREE.Vector3(0,0,0);
     paintMaterial: THREE.ShaderMaterial;
 
+    input:InputManager;
+
 
     initialize(debug: boolean = true, addGridHelper: boolean = true) {
-        // setup camera
+        
         this.camera = new THREE.PerspectiveCamera(35, this.width / this.height, .1, 100);
         this.camera.position.z = 8;
-        this.camera.position.y = 0;
-        this.camera.position.x = 0;
         this.camera.lookAt(0, 0, 0);
-        // setup renderer
+
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById("app") as HTMLCanvasElement,
             alpha: true, 
@@ -61,97 +56,59 @@ export default class WhiteboardDemoScene extends SceneBase {
         });
         this.renderer.setSize(this.width, this.height);
 
+        this.intializeRenderTexture();
+        this.background = new THREE.Color(0x000000);
 
+
+
+        this.setupScene();
+
+        this.add(this.visibleModel);
+        this.input=InputManager.Get();
         this.raycaster = new THREE.Raycaster();
-
-
-        const rtWidth = 512;
-        const rtHeight = 512;
-        this.renderTarget = new THREE.WebGLRenderTarget(rtWidth, rtHeight);
-        const rtFov = 75;
-        const rtAspect = rtWidth / rtHeight;
-        const rtNear = 0.1;
-        const rtFar = 5;
-        this.rtCamera = new THREE.PerspectiveCamera(rtFov, rtAspect, rtNear, rtFar);
-        this.rtCamera.position.z = 2;
-
-        this.rtScene = new THREE.Scene();
-        this.rtScene.background = new THREE.Color('Black');
-
-
-
-        // add window resizing
         WhiteboardDemoScene.addWindowResizing(this.camera, this.renderer);
-
-        // sets up the camera's orbital controls
-        //this.orbitals = new OrbitControls(this.camera, this.renderer.domElement)
-
-        // set the background color
-        this.background = new THREE.Color(0x884422);
-
-        // Creates the geometry + materials
-        const geometry =  new THREE.SphereGeometry(1);
+        this.renderPaintScene();
+    }
 
 
-        //const geometry = new THREE.SphereGeometry(0.5);
-        geometry.computeTangents();
-
-        let self = this;
-        let p = ""
-
-        //let cubemap = new THREE.CubeTextureLoader().load([CubeMap_px, CubeMap_nx, CubeMap_py, CubeMap_ny, CubeMap_pz, CubeMap_nz])
-
-
-        // this.material = new THREE.ShaderMaterial({
-        //     uniforms:{
-        //     },
-        //     vertexShader: VertexShader,
-        //     fragmentShader:FragmentShader,
-        //     defines:{
-        //     }
-        // })
-
-        const light = new THREE.DirectionalLight(new THREE.Color(1,1,1), 1);
-        light.position.set(4,10,10);
-        
+    private setupScene() {
+        const light = new THREE.DirectionalLight(new THREE.Color(1, 1, 1), 1);
+        light.position.set(4, 10, 10);
         this.add(light);
-
-        this.add(new THREE.AmbientLight(new THREE.Color(1,1,1),0.1))
+        this.add(new THREE.AmbientLight(new THREE.Color(1, 1, 1), 0.1));
 
         this.material = new THREE.MeshPhongMaterial({
             map: this.renderTarget.texture
         });
 
         this.paintMaterial = new THREE.ShaderMaterial({
-            uniforms:{
-                brushPos:{value:this.brushPos}
+            uniforms: {
+                brushPos: { value: this.brushPos }
             },
             vertexShader: VertexShader,
             fragmentShader: FragmentShader,
             blending: THREE.AdditiveBlending
-        })
+        });
 
-        let cube = new THREE.Mesh(geometry, this.material);
-        this.rtCube = new THREE.Mesh(geometry, this.paintMaterial);
-        this.rtScene.add(this.rtCube);
-
-        let sphere = new THREE.Mesh(new THREE.SphereGeometry(1), this.material);
-
-        //cube.position.y = .5;
-        // add to scene
-        this.add(cube);
-        //this.add(sphere);
-        this.sphere = sphere;
-        this.cube = cube;
-
-        this.input=InputManager.Get();
+        const geometry = new THREE.SphereGeometry(1);
+        this.visibleModel = new THREE.Mesh(geometry, this.material);
+        this.paintableSurface = new THREE.Mesh(geometry, this.paintMaterial);
+        this.rtScene.add(this.paintableSurface);
     }
 
-    input:InputManager;
+    private intializeRenderTexture() {
+        const rtWidth = 512;
+        const rtHeight = 512;
+        this.renderTarget = new THREE.WebGLRenderTarget(rtWidth, rtHeight);
+        this.rtCamera = new THREE.PerspectiveCamera();
+
+        this.rtScene = new THREE.Scene();
+        this.rtScene.background = new THREE.Color('Blue');
+    }
 
     scenePicker(scene: THREE.Scene, camera, cursorPosition): THREE.Vector3 {
         this.raycaster.setFromCamera(cursorPosition, camera);
-        let intersections = this.raycaster.intersectObjects(scene.children.filter((x) => x != this.sphere));
+        let intersections = this.raycaster.intersectObjects(scene.children.filter((x) => x == this.visibleModel));
 
         if (intersections!.length > 0) {
 
@@ -166,9 +123,9 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.camera.updateProjectionMatrix();
         this.renderer.render(this, this.camera);
 
-        if (this.cube) {
-            this.cube.rotateY(-0.01)
-            this.rtCube.rotateY(-0.01);
+        if (this.visibleModel) {
+            this.visibleModel.rotateY(-0.01)
+            this.paintableSurface.rotateY(-0.01);
         }
 
 
@@ -188,15 +145,20 @@ export default class WhiteboardDemoScene extends SceneBase {
     Paint(cursorPostion:THREE.Vector2){
         let pos = this.scenePicker(this, this.camera, cursorPostion);
 
-        if (pos) {
-            this.paintMaterial.uniforms.brushPos.value = pos;
+        if (!pos) {
+            return;
         }
+        this.paintMaterial.uniforms.brushPos.value = pos;
 
-        this.renderer.autoClearColor=false;
+        this.renderPaintScene();
+    }
+
+    private renderPaintScene() {
+        this.renderer.autoClearColor = false;
         this.renderer.setRenderTarget(this.renderTarget);
-        this.renderer.render(this.rtScene, this.rtCamera);
+        this.renderer.render(this.rtScene, this.camera);
         this.renderer.setRenderTarget(null);
-        this.renderer.autoClearColor=true;
+        this.renderer.autoClearColor = true;
     }
 
     changeState(pageIndex: number) {
