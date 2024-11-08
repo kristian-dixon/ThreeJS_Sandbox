@@ -124,8 +124,8 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.renderer.render(this, this.camera);
 
         if (this.visibleModel) {
-            this.visibleModel.rotateY(-0.01)
-            this.paintableSurface.rotateY(-0.01);
+            this.visibleModel.rotateY(-0.001)
+            this.paintableSurface.rotateY(-0.001);
         }
 
 
