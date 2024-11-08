@@ -167,8 +167,8 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.renderer.render(this, this.camera);
 
         if (this.cube) {
-            this.cube.rotateY(0.01)
-            this.rtCube.rotateY(0.01);
+            this.cube.rotateY(-0.01)
+            this.rtCube.rotateY(-0.01);
         }
 
 
