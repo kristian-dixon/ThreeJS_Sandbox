@@ -2,11 +2,19 @@ import * as THREE from 'three';
 import { GUI } from 'dat.gui';
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
-import VertexShader from "../shaders/paintbrush.vs";
-import FragmentShader from "../shaders/paintbrush.fs";
+import PaintShaderVert from "../shaders/paintbrush.vs";
+import PaintShaderFrag from "../shaders/paintbrush.fs";
+
+import PlanetShaderVert from "../shaders/planet/vertex.vs"
+import PlanetShaderFrag from "../shaders/planet/frag.fs"
+
+import GradientTexturePath from "../textures/SeaLandAirGradient.png";
 
 import SceneBase from '../../../SceneBase';
 import { InputManager } from '../../../shared/input/InputManager';
+
+import CSM, { CSMProxy } from "three-custom-shader-material/vanilla"
+import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 
 /**
  * A class to set up some basic scene elements to minimize code in the
@@ -77,16 +85,23 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.add(light);
         this.add(new THREE.AmbientLight(new THREE.Color(1, 1, 1), 0.1));
 
-        this.material = new THREE.MeshPhongMaterial({
-            map: this.renderTarget.texture
+        let gradientTex = new THREE.TextureLoader().load(GradientTexturePath);
+        this.material = new CustomShaderMaterial({
+            baseMaterial: THREE.MeshPhysicalMaterial,
+            map: this.renderTarget.texture,
+            vertexShader:PlanetShaderVert,
+            fragmentShader:PlanetShaderFrag,
+            uniforms:{
+                uGradient:{value:gradientTex}
+            }
         });
 
         this.paintMaterial = new THREE.ShaderMaterial({
             uniforms: {
                 brushPos: { value: this.brushPos }
             },
-            vertexShader: VertexShader,
-            fragmentShader: FragmentShader,
+            vertexShader: PaintShaderVert,
+            fragmentShader: PaintShaderFrag,
             blending: THREE.AdditiveBlending
         });
 
