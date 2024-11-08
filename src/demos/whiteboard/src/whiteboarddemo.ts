@@ -6,6 +6,7 @@ import VertexShader from "../shaders/paintbrush.vs";
 import FragmentShader from "../shaders/paintbrush.fs";
 
 import SceneBase from '../../../SceneBase';
+import { InputManager } from '../../../shared/input/InputManager';
 
 /**
  * A class to set up some basic scene elements to minimize code in the
@@ -40,8 +41,6 @@ export default class WhiteboardDemoScene extends SceneBase {
     sphere: THREE.Mesh;
     raycaster: THREE.Raycaster;
     pickPosition = { x: 0, y: 0 };
-
-    mouseHeld = false;
 
     brushPos = new THREE.Vector3(0,0,0);
     paintMaterial: THREE.ShaderMaterial;
@@ -144,58 +143,14 @@ export default class WhiteboardDemoScene extends SceneBase {
         //this.add(sphere);
         this.sphere = sphere;
         this.cube = cube;
-        // setup Debugger
-        if (debug) {
 
-        }
-
-
-        this.pickPosition = { x: 0, y: 0 };
-
-
-        function setPickPosition(event) {
-            self.pickPosition.x = (event.clientX / window.innerWidth) * 2 - 1;
-            self.pickPosition.y = (event.clientY / window.innerHeight) * -2 + 1;  // note we flip Y
-        }
-
-        function clearPickPosition() {
-            self.pickPosition.x = -100000;
-            self.pickPosition.y = -100000;
-        }
-
-        window.addEventListener('mousemove', setPickPosition);
-        window.addEventListener('mouseout', clearPickPosition);
-        window.addEventListener('mouseleave', clearPickPosition);
-        clearPickPosition();
-
-        window.addEventListener('mousedown', function (event) {
-            self.mouseHeld = true;
-        })
-
-        window.addEventListener('mouseup', function (event) {
-            self.mouseHeld = false;
-        })
-
-        window.addEventListener('touchstart', (event) => {
-            // prevent the window from scrolling
-            event.preventDefault();
-            setPickPosition(event.touches[0]);
-            self.mouseHeld = true;
-          }, {passive: false});
-           
-          window.addEventListener('touchmove', (event) => {
-            setPickPosition(event.touches[0]);
-          });
-           
-          window.addEventListener('touchend', (event) => {
-            clearPickPosition();
-            self.mouseHeld = false;
-        });
-
+        this.input=InputManager.Get();
     }
 
-    scenePicker(scene: THREE.Scene, camera): THREE.Vector3 {
-        this.raycaster.setFromCamera(this.pickPosition, camera);
+    input:InputManager;
+
+    scenePicker(scene: THREE.Scene, camera, cursorPosition): THREE.Vector3 {
+        this.raycaster.setFromCamera(cursorPosition, camera);
         let intersections = this.raycaster.intersectObjects(scene.children.filter((x) => x != this.sphere));
 
         if (intersections!.length > 0) {
@@ -217,21 +172,31 @@ export default class WhiteboardDemoScene extends SceneBase {
         }
 
 
-        if (this.mouseHeld) {
-            let pos = self.scenePicker(self, self.camera);
-
-            if (pos) {
-                self.sphere.position.set(pos.x, pos.y, pos.z);
-
-                self.paintMaterial.uniforms.brushPos.value = self.sphere.position;
-            }
-
-            self.renderer.autoClearColor=false;
-            self.renderer.setRenderTarget(self.renderTarget);
-            self.renderer.render(self.rtScene, self.rtCamera);
-            self.renderer.setRenderTarget(null);
-            self.renderer.autoClearColor=true;
+        if(this.input.mouse.buttons[0])
+        {
+            this.Paint(this.input.mouse.position);
         }
+        
+        for(let i = 0; i < this.input.touchManager.touches.length;i++){
+            let touch = this.input.touchManager.touches[i];
+            if(touch && touch.isHeld){
+                this.Paint(touch.position);
+            }
+        }
+    }
+
+    Paint(cursorPostion:THREE.Vector2){
+        let pos = this.scenePicker(this, this.camera, cursorPostion);
+
+        if (pos) {
+            this.paintMaterial.uniforms.brushPos.value = pos;
+        }
+
+        this.renderer.autoClearColor=false;
+        this.renderer.setRenderTarget(this.renderTarget);
+        this.renderer.render(this.rtScene, this.rtCamera);
+        this.renderer.setRenderTarget(null);
+        this.renderer.autoClearColor=true;
     }
 
     changeState(pageIndex: number) {
