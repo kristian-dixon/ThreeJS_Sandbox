@@ -16,6 +16,15 @@ import { InputManager } from '../../../shared/input/InputManager';
 import CSM, { CSMProxy } from "three-custom-shader-material/vanilla"
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 
+import CubeMap_nx from "../textures/cubemap/nx.png";
+import CubeMap_ny from "../textures/cubemap/ny.png";
+import CubeMap_pz from "../textures/cubemap/nz.png";
+import CubeMap_px from "../textures/cubemap/px.png";
+import CubeMap_py from "../textures/cubemap/py.png";
+import CubeMap_nz from "../textures/cubemap/pz.png";
+
+
+
 /**
  * A class to set up some basic scene elements to minimize code in the
  * main execution file.
@@ -50,6 +59,7 @@ export default class WhiteboardDemoScene extends SceneBase {
 
     input:InputManager;
 
+    
 
     initialize(debug: boolean = true, addGridHelper: boolean = true) {
         
@@ -71,7 +81,6 @@ export default class WhiteboardDemoScene extends SceneBase {
 
         this.setupScene();
 
-        this.add(this.visibleModel);
         this.input=InputManager.Get();
         this.raycaster = new THREE.Raycaster();
         WhiteboardDemoScene.addWindowResizing(this.camera, this.renderer);
@@ -85,6 +94,13 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.add(light);
         this.add(new THREE.AmbientLight(new THREE.Color(1, 1, 1), 0.2));
 
+
+        let cubemap = new THREE.CubeTextureLoader().load([CubeMap_px, CubeMap_nx, CubeMap_py, CubeMap_ny, CubeMap_pz, CubeMap_nz])
+        this.environment = cubemap;
+        this.background = cubemap;
+        
+
+
         let gradientTex = new THREE.TextureLoader().load(GradientTexturePath);
         this.material = new CustomShaderMaterial({
             baseMaterial: THREE.MeshPhysicalMaterial,
@@ -96,6 +112,44 @@ export default class WhiteboardDemoScene extends SceneBase {
             }
         });
 
+        const geometry = new THREE.SphereGeometry(1);
+        this.visibleModel = new THREE.Mesh(geometry, this.material);
+        this.add(this.visibleModel);
+
+        let quad = new THREE.Mesh(new THREE.PlaneGeometry(10,10), new THREE.ShaderMaterial({
+            vertexShader:
+            `
+                varying vec2 vUv;
+                void main()	{
+                    vUv = uv.xy * 2.0 - 1.0;                   
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+                }
+            `,
+
+            fragmentShader:
+            `
+                uniform vec2 windowResolution;
+                varying vec2 vUv;
+                void main()	{
+                    vec2 pixelUv = vUv;
+                    float length = (1.0/length(vUv*5.0));
+                    length = 1.0-pow(1.0-length, 0.1);
+                    length *= 0.5 * (dot(vUv, vec2(1,1)) + 1.0);
+
+                    length *= 1.0;
+                    gl_FragColor = vec4(length,length,length,length*4.0);
+                }
+            `,
+
+            uniforms:{
+                windowResolution:{value: new THREE.Vector2(window.innerWidth,window.innerHeight)}
+            },
+            transparent:true
+        }))
+       
+        this.add(quad);
+
+
         this.paintMaterial = new THREE.ShaderMaterial({
             uniforms: {
                 brushPos: { value: this.brushPos }
@@ -104,11 +158,10 @@ export default class WhiteboardDemoScene extends SceneBase {
             fragmentShader: PaintShaderFrag,
             blending: THREE.AdditiveBlending
         });
-
-        const geometry = new THREE.SphereGeometry(1);
-        this.visibleModel = new THREE.Mesh(geometry, this.material);
         this.paintableSurface = new THREE.Mesh(geometry, this.paintMaterial);
         this.rtScene.add(this.paintableSurface);
+
+
     }
 
     private intializeRenderTexture() {
@@ -146,6 +199,13 @@ export default class WhiteboardDemoScene extends SceneBase {
 
         if(this.input.mouse.buttons[0])
         {
+            this.paintMaterial.blending = THREE.AdditiveBlending;
+            this.Paint(this.input.mouse.position);
+        }
+
+        if(this.input.mouse.buttons[2])
+        {
+            this.paintMaterial.blending = THREE.SubtractiveBlending;
             this.Paint(this.input.mouse.position);
         }
         

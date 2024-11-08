@@ -17,6 +17,8 @@ export class Mouse {
         window.addEventListener('mouseleave', this.OnMouseLost.bind(this));
         window.addEventListener('mousedown', this.OnMouseDown.bind(this));
         window.addEventListener('mouseup',this.OnMouseUp.bind(this));
+
+        window.addEventListener('contextmenu', (e)=>{e.preventDefault();})
     }
 
     private OnMouseMoved(event:MouseEvent)
@@ -33,10 +35,13 @@ export class Mouse {
     private OnMouseDown(event: MouseEvent){
         console.log(event);
         this.buttons[event.button] = true;
+
+       
     }
 
     private OnMouseUp(event: MouseEvent){
         this.buttons[event.button] = false;
+
     }
 }
 

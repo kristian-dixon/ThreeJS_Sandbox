@@ -15,11 +15,8 @@ vec4 toLinear(vec4 sRGB)
 
 void main() {
     float terrainHeight = texture2D(uMap, vUv).r;
-    
-
+ 
     vec4 color = texture2D(uGradient, vec2(terrainHeight,0.5));
-
     csm_DiffuseColor = toLinear(color);//vec4(1,color.r,0,0);
 
-    csm_Clearcoat=smoothstep(0.1,0.0,terrainHeight);
 }
