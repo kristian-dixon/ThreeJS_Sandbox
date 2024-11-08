@@ -80,10 +80,10 @@ export default class WhiteboardDemoScene extends SceneBase {
 
 
     private setupScene() {
-        const light = new THREE.DirectionalLight(new THREE.Color(1, 1, 1), 1);
+        const light = new THREE.DirectionalLight(new THREE.Color(1, 1, 1), 2);
         light.position.set(4, 10, 10);
         this.add(light);
-        this.add(new THREE.AmbientLight(new THREE.Color(1, 1, 1), 0.1));
+        this.add(new THREE.AmbientLight(new THREE.Color(1, 1, 1), 0.2));
 
         let gradientTex = new THREE.TextureLoader().load(GradientTexturePath);
         this.material = new CustomShaderMaterial({
