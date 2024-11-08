@@ -82,12 +82,7 @@ export class Touches{
         }
         
         this.touches[touch.identifier].isHeld = true;
-       // if(touch.force > 0){
-            this.touches[touch.identifier].position = ClientSpaceToNormalizedSpace(touch.clientX,touch.clientY);
-       // }
-        // else{
-        //     this.touches[touch.identifier].position = new THREE.Vector2(-10000,-10000);
-        // }
+        this.touches[touch.identifier].position = ClientSpaceToNormalizedSpace(touch.clientX,touch.clientY);
     }
     
 }
