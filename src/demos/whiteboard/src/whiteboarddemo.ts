@@ -8,6 +8,9 @@ import PaintShaderFrag from "../shaders/paintbrush.fs";
 import PlanetShaderVert from "../shaders/planet/vertex.vs"
 import PlanetShaderFrag from "../shaders/planet/frag.fs"
 
+import FoldoutShaderVert from "../shaders/planet_foldout/vertex.vs"
+import FoldoutShaderFrag from "../shaders/planet_foldout/frag.fs"
+
 import GradientTexturePath from "../textures/SeaLandAirGradient.png";
 
 import SceneBase from '../../../SceneBase';
@@ -59,7 +62,7 @@ export default class WhiteboardDemoScene extends SceneBase {
 
     input:InputManager;
 
-    
+    rootNode: THREE.Object3D;
 
     initialize(debug: boolean = true, addGridHelper: boolean = true) {
         
@@ -89,11 +92,13 @@ export default class WhiteboardDemoScene extends SceneBase {
 
 
     private setupScene() {
-        const light = new THREE.DirectionalLight(new THREE.Color(1, 1, 1), 2);
+        const light = new THREE.DirectionalLight(new THREE.Color(1, 1, 1), 4);
         light.position.set(4, 10, 10);
         this.add(light);
         this.add(new THREE.AmbientLight(new THREE.Color(1, 1, 1), 0.2));
 
+        this.rootNode = new THREE.Object3D();
+        this.add(this.rootNode);
 
         let cubemap = new THREE.CubeTextureLoader().load([CubeMap_px, CubeMap_nx, CubeMap_py, CubeMap_ny, CubeMap_pz, CubeMap_nz])
         this.environment = cubemap;
@@ -114,7 +119,7 @@ export default class WhiteboardDemoScene extends SceneBase {
 
         const geometry = new THREE.SphereGeometry(1);
         this.visibleModel = new THREE.Mesh(geometry, this.material);
-        this.add(this.visibleModel);
+        this.rootNode.add(this.visibleModel);
 
         let quad = new THREE.Mesh(new THREE.PlaneGeometry(10,10), new THREE.ShaderMaterial({
             vertexShader:
@@ -161,8 +166,24 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.paintableSurface = new THREE.Mesh(geometry, this.paintMaterial);
         this.rtScene.add(this.paintableSurface);
 
+        this.foldoutMaterial = new THREE.ShaderMaterial({
+            uniforms:{
+                uTime:{value:0.9999},
+                uGradient:{value:gradientTex},
+                uMap:{value:this.renderTarget.texture}
+            },
+            vertexShader:FoldoutShaderVert,
+            fragmentShader:FoldoutShaderFrag,
+            defines:{
+                OUTPUT_HEIGHTMAP: false,
+                OUTPUT_BRUSHPOSITION: false
+            }
+        })
 
+        this.rootNode.add(new THREE.Mesh(geometry, this.foldoutMaterial))
     }
+
+    foldoutMaterial: THREE.Material;
 
     private intializeRenderTexture() {
         const rtWidth = 512;
@@ -176,7 +197,7 @@ export default class WhiteboardDemoScene extends SceneBase {
 
     scenePicker(scene: THREE.Scene, camera, cursorPosition): THREE.Vector3 {
         this.raycaster.setFromCamera(cursorPosition, camera);
-        let intersections = this.raycaster.intersectObjects(scene.children.filter((x) => x == this.visibleModel));
+        let intersections = this.raycaster.intersectObjects(this.rootNode.children.filter((x) => x == this.visibleModel),true);
 
         if (intersections!.length > 0) {
 
@@ -191,36 +212,22 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.camera.updateProjectionMatrix();
         this.renderer.render(this, this.camera);
 
-        if (this.visibleModel) {
-            this.visibleModel.rotateY(-0.001)
+        if (this.rootNode) {
+            this.rootNode.rotateY(-0.001)
             this.paintableSurface.rotateY(-0.001);
         }
-
 
         this.input.pointers.forEach((value,key)=>{
             if(value.isDown){
                 this.Paint(value.position);
             }
-        })
+        }) 
 
-        // if(this.input.mouse.buttons[0])
-        // {
-        //     this.paintMaterial.blending = THREE.AdditiveBlending;
-        //     this.Paint(this.input.mouse.position);
-        // }
-
-        // if(this.input.mouse.buttons[2])
-        // {
-        //     this.paintMaterial.blending = THREE.SubtractiveBlending;
-        //     this.Paint(this.input.mouse.position);
-        // }
-        
-        // for(let i = 0; i < this.input.touchManager.touches.length;i++){
-        //     let touch = this.input.touchManager.touches[i];
-        //     if(touch && touch.isHeld){
-        //         this.Paint(touch.position);
-        //     }
-        // }
+        if(this.foldoutMaterial)
+        {
+            this.foldoutMaterial["uniforms"].uTime.value += 0.01;
+            this.foldoutMaterial.needsUpdate = true;
+        }
     }
 
     Paint(cursorPostion:THREE.Vector2){
