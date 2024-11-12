@@ -197,24 +197,30 @@ export default class WhiteboardDemoScene extends SceneBase {
         }
 
 
-        if(this.input.mouse.buttons[0])
-        {
-            this.paintMaterial.blending = THREE.AdditiveBlending;
-            this.Paint(this.input.mouse.position);
-        }
-
-        if(this.input.mouse.buttons[2])
-        {
-            this.paintMaterial.blending = THREE.SubtractiveBlending;
-            this.Paint(this.input.mouse.position);
-        }
-        
-        for(let i = 0; i < this.input.touchManager.touches.length;i++){
-            let touch = this.input.touchManager.touches[i];
-            if(touch && touch.isHeld){
-                this.Paint(touch.position);
+        this.input.pointers.forEach((value,key)=>{
+            if(value.isDown){
+                this.Paint(value.position);
             }
-        }
+        })
+
+        // if(this.input.mouse.buttons[0])
+        // {
+        //     this.paintMaterial.blending = THREE.AdditiveBlending;
+        //     this.Paint(this.input.mouse.position);
+        // }
+
+        // if(this.input.mouse.buttons[2])
+        // {
+        //     this.paintMaterial.blending = THREE.SubtractiveBlending;
+        //     this.Paint(this.input.mouse.position);
+        // }
+        
+        // for(let i = 0; i < this.input.touchManager.touches.length;i++){
+        //     let touch = this.input.touchManager.touches[i];
+        //     if(touch && touch.isHeld){
+        //         this.Paint(touch.position);
+        //     }
+        // }
     }
 
     Paint(cursorPostion:THREE.Vector2){

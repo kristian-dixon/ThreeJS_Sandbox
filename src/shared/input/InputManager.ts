@@ -12,13 +12,20 @@ export class Mouse {
     buttons : boolean[] = [];
 
     constructor(){
-        window.addEventListener('mousemove', this.OnMouseMoved.bind(this));
-        window.addEventListener('mouseout', this.OnMouseLost.bind(this));
-        window.addEventListener('mouseleave', this.OnMouseLost.bind(this));
-        window.addEventListener('mousedown', this.OnMouseDown.bind(this));
-        window.addEventListener('mouseup',this.OnMouseUp.bind(this));
+        // window.addEventListener('mousemove', this.OnMouseMoved.bind(this));
+        // window.addEventListener('mouseout', this.OnMouseLost.bind(this));
+        // window.addEventListener('mouseleave', this.OnMouseLost.bind(this));
+        // window.addEventListener('mousedown', this.OnMouseDown.bind(this));
+        // window.addEventListener('mouseup',this.OnMouseUp.bind(this));
+
+        // window.addEventListener("pointerdown", handleStart, false);
 
         window.addEventListener('contextmenu', (e)=>{e.preventDefault();})
+    }
+
+    private OnPointerDown(event:PointerEvent)
+    {
+
     }
 
     private OnMouseMoved(event:MouseEvent)
@@ -92,10 +99,14 @@ export class Touches{
     
 }
 
+
+
 export class InputManager{
     private static instance: InputManager;
-    mouse:Mouse=new Mouse();
-    touchManager:Touches=new Touches();
+    //mouse:Mouse=new Mouse();
+    //touchManager:Touches=new Touches();
+
+    pointers = new Map<number,Pointer>();
 
     public static Get(){
         if(InputManager.instance == null)
@@ -107,6 +118,58 @@ export class InputManager{
     }
 
     private constructor(){   
+        window.addEventListener('pointerdown', this.OnPointerDown.bind(this))
+        window.addEventListener('pointerup', this.OnPointerUp.bind(this))
 
+        window.addEventListener('pointermove', this.OnPointerMove.bind(this));
+        window.addEventListener('pointercancel', this.OnDestroyPointer.bind(this))
+    }
+
+
+    private OnPointerDown(event:PointerEvent){
+        let pointer = this.pointers.get(event.pointerId)
+
+        if(!pointer)
+        {
+            pointer = new Pointer(ClientSpaceToNormalizedSpace(event.clientX,event.clientY)); 
+            this.pointers.set(event.pointerId,pointer);
+        }
+
+        pointer.isDown = true;
+        this.pointers.set(event.pointerId, pointer);
+    }
+
+    private OnPointerUp(event:PointerEvent)
+    {
+        let pointer = this.pointers.get(event.pointerId);
+        if(pointer){
+            pointer.isDown = false;
+        }
+    }
+
+    private OnPointerMove(event:PointerEvent){
+        let pointer = this.pointers.get(event.pointerId)
+
+        if(!pointer)
+        {
+            pointer = new Pointer(ClientSpaceToNormalizedSpace(event.clientX,event.clientY)); 
+            this.pointers.set(event.pointerId,pointer);
+        }
+
+        pointer.position = ClientSpaceToNormalizedSpace(event.clientX, event.clientY);
+        this.pointers.set(event.pointerId, pointer);
+    }
+
+    private OnDestroyPointer(event:PointerEvent){
+        this.pointers.delete(event.pointerId);
+    }
+}
+
+export class Pointer{
+    position: THREE.Vector2 = new THREE.Vector2(0,0);
+    isDown = false;
+    constructor(pos:THREE.Vector2)
+    {
+        this.position=pos;
     }
 }
