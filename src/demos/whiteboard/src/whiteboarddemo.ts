@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GUI } from 'dat.gui';
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 
 import PaintShaderVert from "../shaders/paintbrush.vs";
 import PaintShaderFrag from "../shaders/paintbrush.fs";
@@ -26,7 +27,7 @@ import CubeMap_px from "../textures/cubemap/px.png";
 import CubeMap_py from "../textures/cubemap/py.png";
 import CubeMap_nz from "../textures/cubemap/pz.png";
 
-
+import GlbTest from "../models/dragon.glb"
 
 /**
  * A class to set up some basic scene elements to minimize code in the
@@ -97,13 +98,12 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.add(light);
         this.add(new THREE.AmbientLight(new THREE.Color(1, 1, 1), 0.2));
 
-        this.rootNode = new THREE.Object3D();
-        this.add(this.rootNode);
-
         let cubemap = new THREE.CubeTextureLoader().load([CubeMap_px, CubeMap_nx, CubeMap_py, CubeMap_ny, CubeMap_pz, CubeMap_nz])
         this.environment = cubemap;
         this.background = cubemap;
-        
+
+        this.rootNode = new THREE.Object3D();
+        this.add(this.rootNode);
 
 
         let gradientTex = new THREE.TextureLoader().load(GradientTexturePath);
@@ -117,44 +117,6 @@ export default class WhiteboardDemoScene extends SceneBase {
             }
         });
 
-        const geometry = new THREE.SphereGeometry(1);
-        this.visibleModel = new THREE.Mesh(geometry, this.material);
-        this.rootNode.add(this.visibleModel);
-
-        let quad = new THREE.Mesh(new THREE.PlaneGeometry(10,10), new THREE.ShaderMaterial({
-            vertexShader:
-            `
-                varying vec2 vUv;
-                void main()	{
-                    vUv = uv.xy * 2.0 - 1.0;                   
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-                }
-            `,
-
-            fragmentShader:
-            `
-                uniform vec2 windowResolution;
-                varying vec2 vUv;
-                void main()	{
-                    vec2 pixelUv = vUv;
-                    float length = (1.0/length(vUv*5.0));
-                    length = 1.0-pow(1.0-length, 0.1);
-                    length *= 0.5 * (dot(vUv, vec2(1,1)) + 1.0);
-
-                    length *= 1.0;
-                    gl_FragColor = vec4(length,length,length,length*4.0);
-                }
-            `,
-
-            uniforms:{
-                windowResolution:{value: new THREE.Vector2(window.innerWidth,window.innerHeight)}
-            },
-            transparent:true
-        }))
-       
-        this.add(quad);
-
-
         this.paintMaterial = new THREE.ShaderMaterial({
             uniforms: {
                 brushPos: { value: this.brushPos }
@@ -163,8 +125,81 @@ export default class WhiteboardDemoScene extends SceneBase {
             fragmentShader: PaintShaderFrag,
             blending: THREE.AdditiveBlending
         });
-        this.paintableSurface = new THREE.Mesh(geometry, this.paintMaterial);
-        this.rtScene.add(this.paintableSurface);
+
+
+        let gltfLoader = new GLTFLoader();
+        let self = this;
+        gltfLoader.load(GlbTest, (gltf)=>{
+            let clone = gltf.scene.clone();
+            self.rootNode.add(gltf.scene);
+
+            gltf.scene.traverse((child)=>{
+                if(child instanceof THREE.Mesh){
+                    child.material = self.material;
+                }
+            })
+
+            clone.traverse((child)=>{
+                if(child instanceof THREE.Mesh){
+                    child.material = self.paintMaterial;
+                }
+            })
+
+            self.rtScene.add(clone);
+        })
+
+        //return;
+
+
+        
+
+        
+        
+
+
+        
+
+        // const geometry = new THREE.SphereGeometry(1);
+        // this.visibleModel = new THREE.Mesh(geometry, this.material);
+        // this.rootNode.add(this.visibleModel);
+
+        // let quad = new THREE.Mesh(new THREE.PlaneGeometry(10,10), new THREE.ShaderMaterial({
+        //     vertexShader:
+        //     `
+        //         varying vec2 vUv;
+        //         void main()	{
+        //             vUv = uv.xy * 2.0 - 1.0;                   
+        //             gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+        //         }
+        //     `,
+
+        //     fragmentShader:
+        //     `
+        //         uniform vec2 windowResolution;
+        //         varying vec2 vUv;
+        //         void main()	{
+        //             vec2 pixelUv = vUv;
+        //             float length = (1.0/length(vUv*5.0));
+        //             length = 1.0-pow(1.0-length, 0.1);
+        //             length *= 0.5 * (dot(vUv, vec2(1,1)) + 1.0);
+
+        //             length *= 1.0;
+        //             gl_FragColor = vec4(length,length,length,length*4.0);
+        //         }
+        //     `,
+
+        //     uniforms:{
+        //         windowResolution:{value: new THREE.Vector2(window.innerWidth,window.innerHeight)}
+        //     },
+        //     transparent:true
+        // }))
+       
+        // this.add(quad);
+
+
+        
+        // this.paintableSurface = new THREE.Mesh(geometry, this.paintMaterial);
+        // this.rtScene.add(this.paintableSurface);
 
         this.foldoutMaterial = new THREE.ShaderMaterial({
             uniforms:{
@@ -180,7 +215,7 @@ export default class WhiteboardDemoScene extends SceneBase {
             }
         })
 
-        this.rootNode.add(new THREE.Mesh(geometry, this.foldoutMaterial))
+        this.add(new THREE.Mesh(new THREE.PlaneGeometry(), this.foldoutMaterial))
     }
 
     foldoutMaterial: THREE.Material;
@@ -192,15 +227,15 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.rtCamera = new THREE.PerspectiveCamera();
 
         this.rtScene = new THREE.Scene();
-        this.rtScene.background = new THREE.Color('Blue');
+        this.rtScene.background = new THREE.Color('black');
     }
 
     scenePicker(scene: THREE.Scene, camera, cursorPosition): THREE.Vector3 {
         this.raycaster.setFromCamera(cursorPosition, camera);
-        let intersections = this.raycaster.intersectObjects(this.rootNode.children.filter((x) => x == this.visibleModel),true);
-
+        let intersections = this.raycaster.intersectObjects([this.rootNode.children[0].children[0]],true);
+        console.log(this.rootNode.children[0].children[0])
         if (intersections!.length > 0) {
-
+            console.log(this.rootNode.children)
             return intersections[0].point;
         }
         return null;
@@ -212,10 +247,10 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.camera.updateProjectionMatrix();
         this.renderer.render(this, this.camera);
 
-        if (this.rootNode) {
-            this.rootNode.rotateY(-0.001)
-            this.paintableSurface.rotateY(-0.001);
-        }
+        // if (this.rootNode) {
+        //     this.rootNode.rotateY(-0.001)
+        //     this.paintableSurface.rotateY(-0.001);
+        // }
 
         this.input.pointers.forEach((value,key)=>{
             if(value.isDown){
