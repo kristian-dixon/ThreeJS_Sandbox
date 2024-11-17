@@ -27,7 +27,7 @@ import CubeMap_px from "../textures/cubemap/px.png";
 import CubeMap_py from "../textures/cubemap/py.png";
 import CubeMap_nz from "../textures/cubemap/pz.png";
 
-import GlbTest from "../models/dragon.glb"
+import GlbTest from "../models/smooth_suzanne.glb"
 
 /**
  * A class to set up some basic scene elements to minimize code in the
@@ -50,7 +50,7 @@ export default class WhiteboardDemoScene extends SceneBase {
     currentPage = 0;
 
     renderTarget: THREE.WebGLRenderTarget;
-    rtCamera: THREE.Camera;
+    lowResRenderTarget: THREE.WebGLRenderTarget;
     rtScene: THREE.Scene;
 
     paintableSurface: THREE.Mesh;
@@ -65,6 +65,7 @@ export default class WhiteboardDemoScene extends SceneBase {
 
     rootNode: THREE.Object3D;
 
+
     initialize(debug: boolean = true, addGridHelper: boolean = true) {
         
         this.camera = new THREE.PerspectiveCamera(35, this.width / this.height, .1, 100);
@@ -74,6 +75,7 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById("app") as HTMLCanvasElement,
             alpha: true, 
+            
            // preserveDrawingBuffer:true -- this is for the canvas
         });
         this.renderer.setSize(this.width, this.height);
@@ -109,9 +111,10 @@ export default class WhiteboardDemoScene extends SceneBase {
         let gradientTex = new THREE.TextureLoader().load(GradientTexturePath);
         this.material = new CustomShaderMaterial({
             baseMaterial: THREE.MeshPhysicalMaterial,
-            map: this.renderTarget.texture,
+            map: this.lowResRenderTarget.texture,
             vertexShader:PlanetShaderVert,
             fragmentShader:PlanetShaderFrag,
+            precision: "highp",
             uniforms:{
                 uGradient:{value:gradientTex}
             }
@@ -123,7 +126,11 @@ export default class WhiteboardDemoScene extends SceneBase {
             },
             vertexShader: PaintShaderVert,
             fragmentShader: PaintShaderFrag,
-            blending: THREE.AdditiveBlending
+            blending: THREE.AdditiveBlending,
+            // depthTest: false,
+            // depthWrite: false
+            side:THREE.DoubleSide,
+            precision: "highp"
         });
 
 
@@ -205,7 +212,7 @@ export default class WhiteboardDemoScene extends SceneBase {
             uniforms:{
                 uTime:{value:0.9999},
                 uGradient:{value:gradientTex},
-                uMap:{value:this.renderTarget.texture}
+                uMap:{value:this.lowResRenderTarget.texture}
             },
             vertexShader:FoldoutShaderVert,
             fragmentShader:FoldoutShaderFrag,
@@ -216,15 +223,54 @@ export default class WhiteboardDemoScene extends SceneBase {
         })
 
         this.add(new THREE.Mesh(new THREE.PlaneGeometry(), this.foldoutMaterial))
+
+        this.blitQuad = new THREE.Mesh(new THREE.PlaneGeometry(), new THREE.ShaderMaterial({
+            uniforms:{
+                uMap:{value:this.renderTarget.texture},
+            },
+            vertexShader:PaintShaderVert,
+            fragmentShader:
+            `
+                varying vec2 vUv;
+
+                uniform sampler2D uMap;
+
+                void main(){
+                    float step = 0.01;
+                    gl_FragColor =  texture2D(uMap, vUv) + 
+                                    (texture2D(uMap, vUv + vec2(-step,0.0)) +
+                                    texture2D(uMap, vUv + vec2(step,0.0) )+
+                                    texture2D(uMap, vUv + vec2(0.0,-step)) +
+                                    texture2D(uMap, vUv + vec2(0.0,step))) / 1.5
+                                    ;
+                }
+            `
+        }))
     }
 
     foldoutMaterial: THREE.Material;
 
+    
+    blitQuad: THREE.Object3D;
+    
+
     private intializeRenderTexture() {
-        const rtWidth = 512;
-        const rtHeight = 512;
+        const rtWidth =  1024;
+        const rtHeight = 1024;
+        
+        
         this.renderTarget = new THREE.WebGLRenderTarget(rtWidth, rtHeight);
-        this.rtCamera = new THREE.PerspectiveCamera();
+        this.renderTarget.texture.generateMipmaps = false;
+        //this.renderTarget.texture.magFilter = THREE.NearestFilter;
+        //this.renderTarget.texture.minFilter = THREE.NearestFilter;
+        this.renderTarget.samples = 1;
+        
+        
+        this.lowResRenderTarget = new THREE.WebGLRenderTarget(rtWidth/2,rtHeight/2);
+        this.lowResRenderTarget.texture.generateMipmaps = false;
+        //this.lowResRenderTarget.texture.magFilter = THREE.NearestFilter;
+        //this.lowResRenderTarget.texture.minFilter = THREE.NearestFilter;
+        this.lowResRenderTarget.samples = 1;
 
         this.rtScene = new THREE.Scene();
         this.rtScene.background = new THREE.Color('black');
@@ -280,8 +326,15 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.renderer.autoClearColor = false;
         this.renderer.setRenderTarget(this.renderTarget);
         this.renderer.render(this.rtScene, this.camera);
+
+        this.renderer.setRenderTarget(this.lowResRenderTarget);
+        this.renderer.render(this.blitQuad,this.camera)
+
+
         this.renderer.setRenderTarget(null);
         this.renderer.autoClearColor = true;
+    
+
     }
 
     changeState(pageIndex: number) {

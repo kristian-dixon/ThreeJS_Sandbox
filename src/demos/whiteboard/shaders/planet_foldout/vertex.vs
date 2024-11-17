@@ -9,5 +9,6 @@ void main()	{
 
     vec4 wrappedPosition = projectionMatrix * modelViewMatrix * vec4(position, 1.0 );
     
-    gl_Position = mix(wrappedPosition,uvPosition, smoothstep(0.0,0.5,fract(uTime)));
+    gl_Position = mix(wrappedPosition,uvPosition, smoothstep(0.0,0.5,fract(uTime))); 
+    gl_Position = uvPosition;
 }
