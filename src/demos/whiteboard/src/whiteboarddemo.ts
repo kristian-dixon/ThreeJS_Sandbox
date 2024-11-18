@@ -124,15 +124,16 @@ export default class WhiteboardDemoScene extends SceneBase {
 
         this.paintMaterial = new THREE.ShaderMaterial({
             uniforms: {
-                brushPos: { value: this.brushPos }
+                brushPos: { value: this.brushPos },
+                color:{value:new THREE.Vector3(1,1,1)}
             },
             vertexShader: PaintShaderVert,
             fragmentShader: PaintShaderFrag,
-            blending: THREE.AdditiveBlending,
             // depthTest: false,
             // depthWrite: false
             side:THREE.DoubleSide,
-            precision: "highp"
+            precision: "highp",
+            transparent:true
         });
 
         let gltfLoader = new GLTFLoader();
