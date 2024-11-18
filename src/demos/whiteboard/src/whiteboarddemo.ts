@@ -141,7 +141,7 @@ export default class WhiteboardDemoScene extends SceneBase {
         gltfLoader.load(GlbTest, (gltf)=>{
             let bounds = new THREE.Box3().setFromObject(gltf.scene);
             let scale = bounds.max.sub(bounds.min);
-            let normalizedScale = 5.0/Math.max(scale.x, scale.y, scale.z);
+            let normalizedScale = 3.0/Math.max(scale.x, scale.y, scale.z);
             gltf.scene.scale.set(normalizedScale,normalizedScale,normalizedScale);
 
             let clone = gltf.scene.clone();
