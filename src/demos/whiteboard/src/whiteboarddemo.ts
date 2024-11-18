@@ -133,10 +133,14 @@ export default class WhiteboardDemoScene extends SceneBase {
             precision: "highp"
         });
 
-
         let gltfLoader = new GLTFLoader();
         let self = this;
         gltfLoader.load(GlbTest, (gltf)=>{
+            let bounds = new THREE.Box3().setFromObject(gltf.scene);
+            let scale = bounds.max.sub(bounds.min);
+            let normalizedScale = 5.0/Math.max(scale.x, scale.y, scale.z);
+            gltf.scene.scale.set(normalizedScale,normalizedScale,normalizedScale);
+
             let clone = gltf.scene.clone();
             self.rootNode.add(gltf.scene);
 
@@ -290,13 +294,17 @@ export default class WhiteboardDemoScene extends SceneBase {
     update() {
         let self = this;
 
+        this.camera.position.set(0,0,0);
+        this.camera.rotateY(0.01);
+        this.camera.translateZ(8);
+        
         this.camera.updateProjectionMatrix();
         this.renderer.render(this, this.camera);
 
-        // if (this.rootNode) {
-        //     this.rootNode.rotateY(-0.001)
-        //     this.paintableSurface.rotateY(-0.001);
-        // }
+        if (this.rootNode) {
+            //this.rootNode.rotateY(-0.001)
+            //this.paintableSurface.rotateY(-0.001);
+        }
 
         this.input.pointers.forEach((value,key)=>{
             if(value.isDown){
