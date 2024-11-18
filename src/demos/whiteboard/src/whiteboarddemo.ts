@@ -91,6 +91,8 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.raycaster = new THREE.Raycaster();
         WhiteboardDemoScene.addWindowResizing(this.camera, this.renderer);
         this.renderPaintScene();
+
+        window["scene"] = this;
     }
 
 
@@ -283,9 +285,7 @@ export default class WhiteboardDemoScene extends SceneBase {
     scenePicker(scene: THREE.Scene, camera, cursorPosition): THREE.Vector3 {
         this.raycaster.setFromCamera(cursorPosition, camera);
         let intersections = this.raycaster.intersectObjects([this.rootNode.children[0].children[0]],true);
-        console.log(this.rootNode.children[0].children[0])
         if (intersections!.length > 0) {
-            console.log(this.rootNode.children)
             return intersections[0].point;
         }
         return null;
