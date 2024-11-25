@@ -35,37 +35,31 @@ import { PaintableTexture } from '../../../shared/meshpainting/scripts/Paintable
  * main execution file.
  */
 export default class WhiteboardDemoScene extends SceneBase {a
-    debugger: GUI = null;
-
     camera: THREE.PerspectiveCamera = null;
     renderer: THREE.WebGLRenderer = null;
-    orbitals: OrbitControls = null;
-    material: THREE.Material = null;
+    //material: THREE.Material = null;
 
     // Get some basic params
     width = window.innerWidth;
     height = window.innerHeight;
 
-
     currentPage = 0;
-
-    // renderTarget: THREE.WebGLRenderTarget;
-    // lowResRenderTarget: THREE.WebGLRenderTarget;
 
     sphere: THREE.Mesh;
     raycaster: THREE.Raycaster;
-    pickPosition = { x: 0, y: 0 };
-
-    brushPos = new THREE.Vector3(0,0,0);
-    paintMaterial: THREE.ShaderMaterial;
 
     input:InputManager;
-
     rootNode: THREE.Object3D;
-
     clock:THREE.Clock;
 
+    foldoutMaterial: THREE.Material;
+
+    blitQuad: THREE.Object3D;
+
     animationMixer: THREE.AnimationMixer;
+
+    paintableTexture:PaintableTexture = new PaintableTexture(512,512);
+
 
     initialize(debug: boolean = true, addGridHelper: boolean = true) {
         this.clock = new THREE.Clock(true);
@@ -92,41 +86,18 @@ export default class WhiteboardDemoScene extends SceneBase {a
     }
  
     private setupScene() {
-        const light = new THREE.DirectionalLight(0xffffff, 1);
+        const light = new THREE.DirectionalLight(0xffffff, 5);
         light.position.set(4, 10, 10);
         this.add(light);
-        
-        // const light2 = new THREE.DirectionalLight(0xfdaa91, 0.5);
-        // light2.position.set(-4,-10,-10);
-        // this.add(light2);
-        this.add(new THREE.HemisphereLight(0xffffff, 0xff0000, 2.0))
+        this.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
 
-        //this.add(new THREE.AmbientLight(0xfdaa91, 1));
-
-        let cubemap = new THREE.CubeTextureLoader().load([CubeMap_px, CubeMap_nx, CubeMap_py, CubeMap_ny, CubeMap_pz, CubeMap_nz])
-        //this.environment = cubemap;
-        this.background = cubemap;
-        //this.background = new THREE.Color("red");
+        this.background = new THREE.Color(0x9f88);
 
         this.rootNode = new THREE.Object3D();
         this.add(this.rootNode);
-     
-        let gradientTex = new THREE.TextureLoader().load(GradientTexturePath);
-        this.material = new CustomShaderMaterial({
-            baseMaterial: THREE.MeshPhysicalMaterial,
-            map: this.paintableTexture.RenderTarget.texture,
-            vertexShader:PlanetShaderVert,
-            fragmentShader:PlanetShaderFrag,
-            uniforms:{
-                uGradient:{value:gradientTex}
-            }
-        });
-
-        
 
         let gltfLoader = new GLTFLoader();
         let self = this;
-        this.groupTest = new THREE.Group();
         gltfLoader.load(GlbTest, (gltf)=>{
             let bounds = new THREE.Box3().setFromObject(gltf.scene);
             let boundsSize = bounds.getSize(new THREE.Vector3())
@@ -135,10 +106,6 @@ export default class WhiteboardDemoScene extends SceneBase {a
             let center = bounds.getCenter(new THREE.Vector3());
             center = center.multiplyScalar(-scale);
            
-            let sp = new THREE.Mesh(new THREE.SphereGeometry(0.1));
-            self.add(sp);
-            sp.position.copy(center);
-            
             gltf.scene.position.copy(center);
 
             gltf.scene.traverse(child=>{
@@ -167,6 +134,7 @@ export default class WhiteboardDemoScene extends SceneBase {a
             }
         })
 
+        let gradientTex = new THREE.TextureLoader().load(GradientTexturePath);
         this.foldoutMaterial = new THREE.ShaderMaterial({
             uniforms:{
                 uTime:{value:0.9999},
@@ -182,38 +150,7 @@ export default class WhiteboardDemoScene extends SceneBase {a
         })
 
         this.add(new THREE.Mesh(new THREE.PlaneGeometry(), this.foldoutMaterial));
-        
-        // this.blitQuad = new THREE.Mesh(new THREE.PlaneGeometry(), new THREE.ShaderMaterial({
-        //     uniforms:{
-        //         uMap:{value:this.renderTarget.texture},
-        //     },
-        //     vertexShader:PaintShaderVert,
-        //     fragmentShader:
-        //     `
-        //         varying vec2 vUv;
-
-        //         uniform sampler2D uMap;
-
-        //         void main(){
-        //             float step = 0.01;
-        //             gl_FragColor =  texture2D(uMap, vUv) + 
-        //                             (texture2D(uMap, vUv + vec2(-step,0.0)) +
-        //                             texture2D(uMap, vUv + vec2(step,0.0) )+
-        //                             texture2D(uMap, vUv + vec2(0.0,-step)) +
-        //                             texture2D(uMap, vUv + vec2(0.0,step))) / 1.5
-        //                             ;
-        //         }
-        //     `
-        // }))
     }
-
-    foldoutMaterial: THREE.Material;
-
-    paintSurface: THREE.Object3D;
-    blitQuad: THREE.Object3D;
-    groupTest: THREE.Group;
-
-   
 
     scenePicker(scene: THREE.Scene, camera, cursorPosition): THREE.Vector3 {
         this.raycaster.setFromCamera(cursorPosition, camera);
@@ -226,19 +163,12 @@ export default class WhiteboardDemoScene extends SceneBase {a
 
     update() {
         let dt = this.clock.getDelta();
-        let self = this;
-
         this.camera.position.set(0,0,0);
         this.camera.rotateY(0.6 * dt);
         this.camera.translateZ(8);
-        
         this.camera.updateProjectionMatrix();
-        this.renderer.render(this, this.camera);
 
-        if (this.rootNode) {
-            //this.rootNode.rotateY(-0.001)
-            //this.paintableSurface.rotateY(-0.001);
-        }
+        this.renderer.render(this, this.camera);
 
         this.input.pointers.forEach((value,key)=>{
             if(value.isDown){
@@ -255,35 +185,19 @@ export default class WhiteboardDemoScene extends SceneBase {a
         if(this.animationMixer)
         {
             this.animationMixer.update(dt);
-            console.log(this.animationMixer);
         }
     }
 
-    paintableTexture:PaintableTexture = new PaintableTexture(512,512);
     Paint(cursorPostion:THREE.Vector2){
         let pos = this.scenePicker(this, this.camera, cursorPostion);
 
         if (!pos) {
             return;
         }
-        //this.paintMaterial.uniforms.brushPos.value = pos;
-        
         this.paintableTexture.Paint(this.renderer,this.camera, this.rootNode, pos);
     }
 
-    // private renderPaintScene() {
-    //     this.renderer.autoClearColor = false;
-    //     this.renderer.setRenderTarget(this.renderTarget);
-    //     if(this.paintSurface)
-    //         this.renderer.render(this.paintSurface, this.camera);
-
-    //     this.renderer.setRenderTarget(this.lowResRenderTarget);
-    //     this.renderer.render(this.blitQuad,this.camera)
-
-    //     this.renderer.setRenderTarget(null);
-    //     this.renderer.autoClearColor = true;   
-    // }
-
+   
     changeState(pageIndex: number) {
         if (pageIndex == this.currentPage) {
             return;

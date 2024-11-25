@@ -80,4 +80,8 @@ export class PaintableTexture
         renderer.setRenderTarget(null);
         renderer.autoClearColor = true;
     }
+
+    SetColor(color:THREE.ColorRepresentation){
+        this.PaintMaterial["uniforms"].color.value = new THREE.Color(color);
+    }
 }
