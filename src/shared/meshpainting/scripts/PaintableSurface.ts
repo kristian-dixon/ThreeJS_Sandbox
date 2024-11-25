@@ -1,61 +1,83 @@
-import { Camera, Material, Mesh, Object3D, Vector3, WebGLRenderer, WebGLRenderTarget } from "three";
+import * as THREE from 'three';
 
-export class PaintableSurface
+import PaintShaderVert from "../../../demos/whiteboard/shaders/paintbrush.vs"
+import PaintShaderFrag from "../../../demos/whiteboard/shaders/paintbrush.fs"
+
+export class PaintableTexture
 {
-    //A paintable surface is defined as:
-    // - A list of meshes that can be painted on
-    // - A list of clones that will be rendered during the painting process
-    // - The high definition render texture
-    // - The low definition render texture (for masking cracks)
-    
-    meshes:{original: Mesh,clone:Mesh}[] = [];
-    renderTarget: WebGLRenderTarget;
-    lowResRenderTarget: WebGLRenderTarget;
+    RenderTarget: THREE.WebGLRenderTarget;
+    PaintMaterial: THREE.Material;
 
-    constructor(width:number, height:number, scaleFactor:number){
-        this.renderTarget = new WebGLRenderTarget(width, height);
-        this.renderTarget.texture.generateMipmaps = false;
+    constructor(rtWidth:number, rtHeight: number){
+        this.RenderTarget = new THREE.WebGLRenderTarget(rtWidth, rtHeight);
+        this.RenderTarget.texture.generateMipmaps = false;
+        //this.renderTarget.texture.magFilter = THREE.NearestFilter;
+        //this.renderTarget.texture.minFilter = THREE.NearestFilter;
+        this.RenderTarget.samples = 1;
+
+        this.PaintMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                brushPos: {value: new THREE.Vector3(0,0,0)},
+                color: {value: new THREE.Vector3(1,1,1)}
+            },
+            vertexShader: PaintShaderVert,
+            fragmentShader: PaintShaderFrag,
+            // depthTest: false,
+            // depthWrite: false
+            side:THREE.DoubleSide,
+            //precision: "highp",
+            transparent:true
+        });
+    }
+
+    Paint(renderer:THREE.WebGLRenderer, camera:THREE.Camera, root:THREE.Object3D, brushPosition:THREE.Vector3)
+    {
+        this.PaintMaterial["uniforms"].brushPos.value = brushPosition;
+        renderer.autoClearColor = false;
+        renderer.setRenderTarget(this.RenderTarget);
         
-        this.lowResRenderTarget = new WebGLRenderTarget(width/scaleFactor,height/scaleFactor);
-        this.lowResRenderTarget.texture.generateMipmaps = false;
-    }
+        
+        root.traverse(child=>{
+            if(child instanceof THREE.Mesh)
+            {
+                if(child.material as THREE.Material){
+                    child["RenderMaterialBackup"] = child.material;
+                    child.material = this.PaintMaterial;
+                }
 
-    addMesh(mesh:Mesh){
-        if(this.meshes.find(x=>x.original == mesh)){
-            return;
-        }
-
-        let pair = {original:mesh, clone:mesh.clone(false)};
-        this.meshes.push(pair);
-    }
-}
-
-export class PaintableObject
-{ 
-    surfaces:Map<string, PaintableSurface> = new Map();
-
-    constructor(mesh:Object3D){
-        mesh.traverse((child:Object3D)=>{
-            if(child instanceof Mesh){
-                this.SetupPaintableSurface(child);
+                if(child.material as THREE.Material[])
+                {
+                    for(let i = 0; i < child.material.length;i++)
+                    {
+                        child["RenderMaterialBackup-"+i] = child.material[i];
+                        child.material[i] = this.PaintMaterial;
+                    }
+                }
             }
         })
 
-        //create materials
-    }
+        renderer.render(root, camera);
 
-    SetupPaintableSurface(surface: Mesh){
-        surface.material
-    }
+        // this.renderer.setRenderTarget(this.lowResRenderTarget);
+        // this.renderer.render(this.blitQuad,this.camera)
+        root.traverse(child=>{
+            if(child instanceof THREE.Mesh)
+            {
+                if(child.material as THREE.Material){
+                    child.material = child["RenderMaterialBackup"];
+                }
 
-    draw(position:Vector3, renderer:WebGLRenderer, camera:Camera){
-        this.surfaces.forEach((value,key)=>{
-            //set render targets
-            //foreach clone
-                //update material
-                //update postiion
-                //render
-            //unset render targets
+                if(child.material as THREE.Material[])
+                {
+                    for(let i = 0; i < child.material.length;i++)
+                    {
+                        child.material[i] = child["RenderMaterialBackup-"+i];
+                    }
+                }
+            }
         })
+
+        renderer.setRenderTarget(null);
+        renderer.autoClearColor = true;
     }
 }
