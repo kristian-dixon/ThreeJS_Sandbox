@@ -26,8 +26,8 @@ import CubeMap_px from "../textures/cubemap/px.png";
 import CubeMap_py from "../textures/cubemap/py.png";
 import CubeMap_nz from "../textures/cubemap/pz.png";
 
-import GlbTest from "../models/CesiumMan.glb"
 import { PaintableTexture } from '../../../shared/meshpainting/scripts/PaintableSurface';
+import GlbTest from "../models/cursedchunky.glb"
 
 
 /**
@@ -114,6 +114,8 @@ export default class WhiteboardDemoScene extends SceneBase {a
                     if(child.material as THREE.Material){
                         console.log(child.material);
                         child.material["map"] = self.paintableTexture.RenderTarget.texture;
+                    console.log(child.material);
+
                     }
                     else
                     {
@@ -154,8 +156,10 @@ export default class WhiteboardDemoScene extends SceneBase {a
 
     scenePicker(scene: THREE.Scene, camera, cursorPosition): THREE.Vector3 {
         this.raycaster.setFromCamera(cursorPosition, camera);
+        
         let intersections = this.raycaster.intersectObjects(this.rootNode.children[0].children,true);
         if (intersections!.length > 0) {
+            console.log("IS INTERSECTING")
             return intersections[0].point;
         }
         return null;
@@ -168,13 +172,14 @@ export default class WhiteboardDemoScene extends SceneBase {a
         this.camera.translateZ(8);
         this.camera.updateProjectionMatrix();
 
-        this.renderer.render(this, this.camera);
 
         this.input.pointers.forEach((value,key)=>{
             if(value.isDown){
                 this.Paint(value.position);
             }
         }) 
+
+        this.renderer.render(this, this.camera);
 
         if(this.foldoutMaterial)
         {

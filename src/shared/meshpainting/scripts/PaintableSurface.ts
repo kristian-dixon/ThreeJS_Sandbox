@@ -18,14 +18,16 @@ export class PaintableTexture
         this.PaintMaterial = new THREE.ShaderMaterial({
             uniforms: {
                 brushPos: {value: new THREE.Vector3(0,0,0)},
-                color: {value: new THREE.Vector3(1,1,1)}
+                color: {value: new THREE.Vector3(1,1,1)},
+                blendStrength: {value: 0.1},
+                brushRadius: {value: 0.1},
+                brushFalloff: {value: 0.5}
             },
             vertexShader: PaintShaderVert,
             fragmentShader: PaintShaderFrag,
-            // depthTest: false,
-            // depthWrite: false
+            depthTest: false,
+            depthWrite: false,
             side:THREE.DoubleSide,
-            //precision: "highp",
             transparent:true
         });
     }
@@ -83,5 +85,26 @@ export class PaintableTexture
 
     SetColor(color:THREE.ColorRepresentation){
         this.PaintMaterial["uniforms"].color.value = new THREE.Color(color);
+    }
+
+    SetBlendStrength(strength: number)
+    {
+        this.PaintMaterial["uniforms"].blendStrength.value = strength;
+    }
+
+    SetBrushRadius(radius: number)
+    {
+        this.PaintMaterial["uniforms"].brushRadius.value = radius;
+    }
+
+    SetBrushFalloff(value: number)
+    {
+        this.PaintMaterial["uniforms"].brushFalloff.value = value;
+    }
+
+    SetBlendMode(blendMode:THREE.Blending)
+    {
+        this.PaintMaterial.blending = blendMode;
+        this.PaintMaterial.needsUpdate = true;
     }
 }
