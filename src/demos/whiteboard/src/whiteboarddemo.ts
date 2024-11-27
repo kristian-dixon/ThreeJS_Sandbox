@@ -107,18 +107,24 @@ export default class WhiteboardDemoScene extends SceneBase {a
         let self = this;
         modelUploader.addEventListener("change", (evt)=>{
             let modelUrl = URL.createObjectURL( modelUploader.files[0] );
-
             self.loadModel(modelUrl);
-            // var userImageURL = URL.createObjectURL( mainTexUploader.files[0] );
-            
-            // var loader = new THREE.TextureLoader();
-            // loader.setCrossOrigin("");
-            // fireTex = loader.load(userImageURL);
-            // fireTex.wrapS = THREE.RepeatWrapping;
-            // fireTex.wrapT = THREE.RepeatWrapping;
-            // self.material.uniforms["mainTex"].value = fireTex;
-            // self.material.needsUpdate = true;
+        })
 
+
+        let textureUploader = document.createElement("input")
+        textureUploader.type = "file" 
+        textureUploader.accept = ".png"
+        textureUploader.style.visibility="hidden";
+        textureUploader.addEventListener("change", (evt)=>{
+            var userImageURL = URL.createObjectURL( textureUploader.files[0] );
+        
+            var loader = new THREE.TextureLoader();
+            loader.setCrossOrigin("");
+            let tex = loader.load(userImageURL); 
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            this.paintableTexture.Import(self.renderer,self.camera,tex);
+            this.foldoutMaterial["uniforms"].uMap.value = tex;
         })
 
         let buttonsFuncs = {
@@ -127,10 +133,14 @@ export default class WhiteboardDemoScene extends SceneBase {a
             },
             textureExporter:function(){
                 self.paintableTexture.Export(self.renderer);
+            },
+            textureImporter:function(){
+                textureUploader.click();
             }
         }
-        this.debugger.add(buttonsFuncs, "modelLoader").name("Load Model");
         this.debugger.add(buttonsFuncs, "textureExporter").name("Save Texture");
+        this.debugger.add(buttonsFuncs, "textureImporter").name("Load Texture");
+        this.debugger.add(buttonsFuncs, "modelLoader").name("Load Model");
 
 
 
@@ -238,6 +248,9 @@ export default class WhiteboardDemoScene extends SceneBase {a
                 this.Paint(value.position);
             }
         }) 
+        if(this.paintableTexture.dirty){
+            this.paintableTexture.Paint(this.renderer,this.camera,this.rootNode,new THREE.Vector3(0,10000,0));
+        }
 
         this.renderer.render(this, this.camera);
 
@@ -251,6 +264,7 @@ export default class WhiteboardDemoScene extends SceneBase {a
         {
             this.animationMixer.update(dt);
         }
+
     }
 
     Paint(cursorPostion:THREE.Vector2){

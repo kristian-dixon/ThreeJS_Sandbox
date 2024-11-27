@@ -9,6 +9,9 @@ export class PaintableTexture
     PaintMaterial: THREE.Material;
     brushColor= 0xffffff;
 
+    blitMaterial: THREE.Material;
+    quad: THREE.Mesh;
+
     Settings = {
         brushPos: {value: new THREE.Vector3(0,0,0)},
         color: {value: new THREE.Color(255,255,255)},
@@ -33,6 +36,28 @@ export class PaintableTexture
             side:THREE.DoubleSide,
             transparent:true
         });
+
+        this.blitMaterial =  new THREE.ShaderMaterial({
+            uniforms:{
+                uMap:{value:null}
+            },
+            vertexShader:PaintShaderVert,
+            fragmentShader:
+            `
+                varying vec2 vUv;
+                uniform sampler2D uMap;
+                              
+                void main(){
+                    gl_FragColor = vec4(texture2D(uMap, vUv).xyz,1.0);
+                    return;
+                }
+            `,
+            depthTest: false,
+            depthWrite: false,
+            side:THREE.DoubleSide,
+            transparent:true
+        });
+        this.quad = new THREE.Mesh(new THREE.PlaneGeometry(),this.blitMaterial)
     }
 
     Paint(renderer:THREE.WebGLRenderer, camera:THREE.Camera, root:THREE.Object3D, brushPosition:THREE.Vector3)
@@ -41,6 +66,11 @@ export class PaintableTexture
         renderer.autoClearColor = false;
         renderer.setRenderTarget(this.RenderTarget);
         
+        if(this.dirty)
+        {
+            renderer.render(this.quad, camera);
+            this.dirty = false;
+        }
         
         root.traverse(child=>{
             if(child instanceof THREE.Mesh)
@@ -109,6 +139,14 @@ export class PaintableTexture
     {
         this.PaintMaterial.blending = blendMode;
         this.PaintMaterial.needsUpdate = true;
+    }
+
+    dirty = false;
+    Import(renderer:THREE.WebGLRenderer, camera:THREE.Camera, texture: THREE.Texture){     
+        (this.blitMaterial as THREE.ShaderMaterial).uniforms.uMap.value = texture;
+        (this.blitMaterial as THREE.ShaderMaterial).needsUpdate = true;//.uMap.value = texture;
+        (this.blitMaterial as THREE.ShaderMaterial).uniformsNeedUpdate = true;    
+        this.dirty = true;
     }
 
     Export(renderer: THREE.WebGLRenderer){
