@@ -8,7 +8,8 @@ void main(){
     //float terrainHeight = texture2D(uMap, vUv).r;
     vec2 uv = vUv ;
     //uv.x *=2.0;
-   float terrainHeight = texture2D(uMap, uv).r;
+    vec4 texColor = texture2D(uMap, uv);
+    float terrainHeight = texColor.r;
     //if(max(uv.x,uv.y)>1.0)
     {
         terrainHeight = textureLod(uMap, fract(uv), mod(uTime,8.0)).r;
@@ -18,6 +19,11 @@ void main(){
 
 #ifdef OUTPUT_HEIGHTMAP
     gl_FragColor = vec4(terrainHeight.rrr,1.0);
+    return;
+#endif
+
+#ifdef OUTPUT_RAW_TEXTURE
+    gl_FragColor = vec4(0.0,0.0,0.0,1.0) + texColor ;
     return;
 #endif
 

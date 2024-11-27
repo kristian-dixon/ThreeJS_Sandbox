@@ -7,6 +7,15 @@ export class PaintableTexture
 {
     RenderTarget: THREE.WebGLRenderTarget;
     PaintMaterial: THREE.Material;
+    brushColor= 0xffffff;
+
+    Settings = {
+        brushPos: {value: new THREE.Vector3(0,0,0)},
+        color: {value: new THREE.Color(255,255,255)},
+        blendStrength: {value: 0.1},
+        brushRadius: {value: 0.1},
+        brushFalloff: {value: 0.5}
+    }
 
     constructor(rtWidth:number, rtHeight: number){
         this.RenderTarget = new THREE.WebGLRenderTarget(rtWidth, rtHeight);
@@ -16,13 +25,7 @@ export class PaintableTexture
         this.RenderTarget.samples = 1;
 
         this.PaintMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                brushPos: {value: new THREE.Vector3(0,0,0)},
-                color: {value: new THREE.Vector3(1,1,1)},
-                blendStrength: {value: 0.1},
-                brushRadius: {value: 0.1},
-                brushFalloff: {value: 0.5}
-            },
+            uniforms:this.Settings,
             vertexShader: PaintShaderVert,
             fragmentShader: PaintShaderFrag,
             depthTest: false,
@@ -106,5 +109,27 @@ export class PaintableTexture
     {
         this.PaintMaterial.blending = blendMode;
         this.PaintMaterial.needsUpdate = true;
+    }
+
+    Export(renderer: THREE.WebGLRenderer){
+        // Read the pixel data from the render target
+        const pixelBuffer = new Uint8Array(this.RenderTarget.width * this.RenderTarget.height * 4);
+        renderer.readRenderTargetPixels(this.RenderTarget, 0, 0, this.RenderTarget.width, this.RenderTarget.height, pixelBuffer);
+
+        // Create a canvas and draw the pixel data onto it
+        const canvas = document.createElement('canvas');
+        canvas.width = this.RenderTarget.width;
+        canvas.height = this.RenderTarget.height;
+        const context = canvas.getContext('2d');
+        const imageData = context.createImageData(this.RenderTarget.width, this.RenderTarget.height);
+        imageData.data.set(pixelBuffer);
+        context.putImageData(imageData, 0, 0);
+
+        // Export the canvas as a PNG
+        const dataURL = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = dataURL;
+        link.download = 'export.png';
+        link.click();
     }
 }

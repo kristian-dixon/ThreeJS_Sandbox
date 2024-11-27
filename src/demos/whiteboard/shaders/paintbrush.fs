@@ -10,6 +10,6 @@ uniform float brushFalloff;
 
 void main()	{
     float dist = step(length(vWorldPos.xyz-brushPos),brushRadius);//smoothstep(0.1,0.090,length(vWorldPos.xyz-brushPos)) ;
-    gl_FragColor = vec4(color,dist*brushFalloff);
+    gl_FragColor = vec4(color,dist*blendStrength);
     return;
 }

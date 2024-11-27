@@ -37,7 +37,6 @@ import GlbTest from "../models/cursedchunky.glb"
 export default class WhiteboardDemoScene extends SceneBase {a
     camera: THREE.PerspectiveCamera = null;
     renderer: THREE.WebGLRenderer = null;
-    //material: THREE.Material = null;
 
     // Get some basic params
     width = window.innerWidth;
@@ -60,6 +59,8 @@ export default class WhiteboardDemoScene extends SceneBase {a
 
     paintableTexture:PaintableTexture = new PaintableTexture(512,512);
 
+    gltfLoader = new GLTFLoader();
+    gltf: THREE.Group;
 
     initialize(debug: boolean = true, addGridHelper: boolean = true) {
         this.clock = new THREE.Clock(true);
@@ -83,8 +84,58 @@ export default class WhiteboardDemoScene extends SceneBase {a
         WhiteboardDemoScene.addWindowResizing(this.camera, this.renderer);
 
         window["scene"] = this;
+
+        this.initStandaloneUI();
     }
- 
+
+    debugger:GUI;
+    private initStandaloneUI()
+    {
+        this.debugger = new GUI();
+
+        this.debugger.addColor(this.paintableTexture,'brushColor').onChange(()=>{
+            this.paintableTexture.SetColor(this.paintableTexture.brushColor);
+        })
+
+        this.debugger.add(this.paintableTexture.Settings.blendStrength,'value').name("Blend Strength");
+        this.debugger.add(this.paintableTexture.Settings.brushRadius,'value').name("Brush Radius");
+
+        let modelUploader = document.createElement("input")
+        modelUploader.type = "file" 
+        modelUploader.accept = ".glb"
+        modelUploader.style.visibility="hidden";
+        let self = this;
+        modelUploader.addEventListener("change", (evt)=>{
+            let modelUrl = URL.createObjectURL( modelUploader.files[0] );
+
+            self.loadModel(modelUrl);
+            // var userImageURL = URL.createObjectURL( mainTexUploader.files[0] );
+            
+            // var loader = new THREE.TextureLoader();
+            // loader.setCrossOrigin("");
+            // fireTex = loader.load(userImageURL);
+            // fireTex.wrapS = THREE.RepeatWrapping;
+            // fireTex.wrapT = THREE.RepeatWrapping;
+            // self.material.uniforms["mainTex"].value = fireTex;
+            // self.material.needsUpdate = true;
+
+        })
+
+        let buttonsFuncs = {
+            modelLoader:function(){
+                modelUploader.click();
+            },
+            textureExporter:function(){
+                self.paintableTexture.Export(self.renderer);
+            }
+        }
+        this.debugger.add(buttonsFuncs, "modelLoader").name("Load Model");
+        this.debugger.add(buttonsFuncs, "textureExporter").name("Save Texture");
+
+
+
+    }
+
     private setupScene() {
         const light = new THREE.DirectionalLight(0xffffff, 5);
         light.position.set(4, 10, 10);
@@ -96,9 +147,37 @@ export default class WhiteboardDemoScene extends SceneBase {a
         this.rootNode = new THREE.Object3D();
         this.add(this.rootNode);
 
-        let gltfLoader = new GLTFLoader();
         let self = this;
-        gltfLoader.load(GlbTest, (gltf)=>{
+        this.loadModel(GlbTest);
+
+        let gradientTex = new THREE.TextureLoader().load(GradientTexturePath);
+        this.foldoutMaterial = new THREE.ShaderMaterial({
+            uniforms:{
+                uTime:{value:0.9999},
+                uGradient:{value:gradientTex},
+                uMap:{value:this.paintableTexture.RenderTarget.texture}
+            },
+            vertexShader:FoldoutShaderVert,
+            fragmentShader:FoldoutShaderFrag,
+            defines:{
+                OUTPUT_HEIGHTMAP: false,
+                OUTPUT_BRUSHPOSITION: false,
+                OUTPUT_RAW_TEXTURE: true
+            }
+        })
+
+        this.add(new THREE.Mesh(new THREE.PlaneGeometry(), this.foldoutMaterial));
+    }
+
+    loadModel(model:any){
+        //Cleanup
+        if(this.gltf){
+            this.rootNode.remove(this.gltf);
+        }
+        let self = this;
+
+
+        this.gltfLoader.load(model, (gltf)=>{
             let bounds = new THREE.Box3().setFromObject(gltf.scene);
             let boundsSize = bounds.getSize(new THREE.Vector3())
             let scale = 3.0/Math.max(boundsSize.x, boundsSize.y, boundsSize.z);
@@ -112,10 +191,7 @@ export default class WhiteboardDemoScene extends SceneBase {a
                 if(child instanceof THREE.Mesh)
                 {
                     if(child.material as THREE.Material){
-                        console.log(child.material);
                         child.material["map"] = self.paintableTexture.RenderTarget.texture;
-                    console.log(child.material);
-
                     }
                     else
                     {
@@ -129,29 +205,13 @@ export default class WhiteboardDemoScene extends SceneBase {a
 
             gltf.scene.scale.set(scale,scale,scale);
             self.rootNode.add(gltf.scene);
+            this.gltf = gltf.scene;
             
             if(gltf.animations.length > 0){
                 self.animationMixer = new THREE.AnimationMixer(gltf.scene);
                 //self.animationMixer.clipAction(gltf.animations[0]).play();
             }
         })
-
-        let gradientTex = new THREE.TextureLoader().load(GradientTexturePath);
-        this.foldoutMaterial = new THREE.ShaderMaterial({
-            uniforms:{
-                uTime:{value:0.9999},
-                uGradient:{value:gradientTex},
-                uMap:{value:this.paintableTexture.RenderTarget.texture}
-            },
-            vertexShader:FoldoutShaderVert,
-            fragmentShader:FoldoutShaderFrag,
-            defines:{
-                OUTPUT_HEIGHTMAP: false,
-                OUTPUT_BRUSHPOSITION: false
-            }
-        })
-
-        this.add(new THREE.Mesh(new THREE.PlaneGeometry(), this.foldoutMaterial));
     }
 
     scenePicker(scene: THREE.Scene, camera, cursorPosition): THREE.Vector3 {
@@ -159,11 +219,11 @@ export default class WhiteboardDemoScene extends SceneBase {a
         
         let intersections = this.raycaster.intersectObjects(this.rootNode.children[0].children,true);
         if (intersections!.length > 0) {
-            console.log("IS INTERSECTING")
             return intersections[0].point;
         }
         return null;
     }
+
 
     update() {
         let dt = this.clock.getDelta();
