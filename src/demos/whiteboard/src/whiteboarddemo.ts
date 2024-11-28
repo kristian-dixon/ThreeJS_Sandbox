@@ -124,7 +124,7 @@ export default class WhiteboardDemoScene extends SceneBase {a
             tex.wrapS = THREE.RepeatWrapping;
             tex.wrapT = THREE.RepeatWrapping;
             this.paintableTexture.Import(self.renderer,self.camera,tex);
-            this.foldoutMaterial["uniforms"].uMap.value = tex;
+            //this.foldoutMaterial["uniforms"].uMap.value = tex;
         })
 
         let buttonsFuncs = {

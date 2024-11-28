@@ -68,8 +68,7 @@ export class PaintableTexture
         
         if(this.dirty)
         {
-            renderer.render(this.quad, camera);
-            this.dirty = false;
+            renderer.render(this.quad, camera);           
         }
         
         root.traverse(child=>{
@@ -144,9 +143,10 @@ export class PaintableTexture
     dirty = false;
     Import(renderer:THREE.WebGLRenderer, camera:THREE.Camera, texture: THREE.Texture){     
         (this.blitMaterial as THREE.ShaderMaterial).uniforms.uMap.value = texture;
-        (this.blitMaterial as THREE.ShaderMaterial).needsUpdate = true;//.uMap.value = texture;
-        (this.blitMaterial as THREE.ShaderMaterial).uniformsNeedUpdate = true;    
+        // (this.blitMaterial as THREE.ShaderMaterial).needsUpdate = true;//.uMap.value = texture;
+        // (this.blitMaterial as THREE.ShaderMaterial).uniformsNeedUpdate = true;    
         this.dirty = true;
+        setTimeout(()=>{this.dirty = false}, 100);
     }
 
     Export(renderer: THREE.WebGLRenderer){
