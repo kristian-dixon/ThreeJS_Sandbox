@@ -15,7 +15,7 @@ import FoldoutShaderFrag from "../shaders/planet_foldout/frag.fs"
 import GradientTexturePath from "../textures/SeaLandAirGradient.png";
 
 import SceneBase from '../../../SceneBase';
-import { InputManager } from '../../../shared/input/InputManager';
+import { InputManager, Pointer } from '../../../shared/input/InputManager';
 
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 
@@ -27,7 +27,8 @@ import CubeMap_py from "../textures/cubemap/py.png";
 import CubeMap_nz from "../textures/cubemap/pz.png";
 
 import { PaintableTexture } from '../../../shared/meshpainting/scripts/PaintableSurface';
-import GlbTest from "../models/cursedchunky.glb"
+import GlbTest from "../models/Quad.glb"
+import { DepthPick } from '../../../shared/picking/depthpick';
 
 
 /**
@@ -62,6 +63,9 @@ export default class WhiteboardDemoScene extends SceneBase {a
     gltfLoader = new GLTFLoader();
     gltf: THREE.Group;
 
+
+    depthTest:DepthPick;
+
     initialize(debug: boolean = true, addGridHelper: boolean = true) {
         this.clock = new THREE.Clock(true);
         this.camera = new THREE.PerspectiveCamera(35, this.width / this.height, .1, 100);
@@ -74,9 +78,9 @@ export default class WhiteboardDemoScene extends SceneBase {a
             
            // preserveDrawingBuffer:true -- this is for the canvas
         });
+        let canvas = null as HTMLCanvasElement;
         this.renderer.setSize(this.width, this.height);
 
-        this.background = new THREE.Color(0x550000);
         this.setupScene();
 
         this.input=InputManager.Get();
@@ -86,11 +90,16 @@ export default class WhiteboardDemoScene extends SceneBase {a
         window["scene"] = this;
 
         this.initStandaloneUI();
+
+        this.depthTest = new DepthPick(this.camera);
     }
 
     debugger:GUI;
     private initStandaloneUI()
     {
+        if(window.self != window.top){
+            return;
+        }
         this.debugger = new GUI();
 
         this.debugger.addColor(this.paintableTexture,'brushColor').onChange(()=>{
@@ -152,8 +161,10 @@ export default class WhiteboardDemoScene extends SceneBase {a
         this.add(light);
         this.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
 
-        this.background = new THREE.Color(0x9f88);
-
+        if(window.self == window.top){
+            this.background = new THREE.Color(0x9f88);
+        }
+        
         this.rootNode = new THREE.Object3D();
         this.add(this.rootNode);
 
@@ -174,9 +185,19 @@ export default class WhiteboardDemoScene extends SceneBase {a
                 OUTPUT_BRUSHPOSITION: false,
                 OUTPUT_RAW_TEXTURE: true
             }
-        })
+        });
 
-        this.add(new THREE.Mesh(new THREE.PlaneGeometry(), this.foldoutMaterial));
+        //this.add(new THREE.Mesh(new THREE.PlaneGeometry(), this.foldoutMaterial));
+        // let plane = new THREE.Mesh(new THREE.PlaneGeometry());
+        // plane.rotateX(-1.57)
+        // plane.position.set(0,-1,0)
+        // plane.scale.set(1000,1000,1000);
+
+        // this.add(plane);
+
+        this["sphere"] = new THREE.Mesh(new THREE.SphereGeometry(0.12));
+        (this.sphere.material as any).color = new THREE.Color("yellow");
+        this.add(this.sphere);
     }
 
     loadModel(model:any){
@@ -190,7 +211,7 @@ export default class WhiteboardDemoScene extends SceneBase {a
         this.gltfLoader.load(model, (gltf)=>{
             let bounds = new THREE.Box3().setFromObject(gltf.scene);
             let boundsSize = bounds.getSize(new THREE.Vector3())
-            let scale = 3.0/Math.max(boundsSize.x, boundsSize.y, boundsSize.z);
+            let scale = 8.0/Math.max(boundsSize.x, boundsSize.y, boundsSize.z);
 
             let center = bounds.getCenter(new THREE.Vector3());
             center = center.multiplyScalar(-scale);
@@ -202,12 +223,20 @@ export default class WhiteboardDemoScene extends SceneBase {a
                 {
                     if(child.material as THREE.Material){
                         child.material["map"] = self.paintableTexture.RenderTarget.texture;
+                        if(child.material["metalness"] == 1)
+                        {
+                            child.material["metalness"] = 0;
+                        }
                     }
                     else
                     {
                         for(let i = 0; i < child.material.length; i++)
                         {
                             child.material[i]["map"] = self.paintableTexture.RenderTarget.texture;
+                            if(child.material["metalness"] == 1)
+                            {
+                                child.material["metalness"] = 0;
+                            }
                         }
                     }
                 }
@@ -219,14 +248,14 @@ export default class WhiteboardDemoScene extends SceneBase {a
             
             if(gltf.animations.length > 0){
                 self.animationMixer = new THREE.AnimationMixer(gltf.scene);
-                //self.animationMixer.clipAction(gltf.animations[0]).play();
+                //self.animationMixer.clipAction(gltf.animations[0]).play().stop();
+                
             }
         })
     }
 
     scenePicker(scene: THREE.Scene, camera, cursorPosition): THREE.Vector3 {
         this.raycaster.setFromCamera(cursorPosition, camera);
-        
         let intersections = this.raycaster.intersectObjects(this.rootNode.children[0].children,true);
         if (intersections!.length > 0) {
             return intersections[0].point;
@@ -234,26 +263,26 @@ export default class WhiteboardDemoScene extends SceneBase {a
         return null;
     }
 
-
+    timeModifier = 0;
     update() {
-        let dt = this.clock.getDelta();
+        let dt = this.timeModifier;//this.clock.getDelta();
         this.camera.position.set(0,0,0);
         this.camera.rotateY(0.6 * dt);
         this.camera.translateZ(8);
         this.camera.updateProjectionMatrix();
 
-
+        
         this.input.pointers.forEach((value,key)=>{
             if(value.isDown){
-                this.Paint(value.position);
+                this.Paint(value);
             }
         }) 
+
         if(this.paintableTexture.dirty){
             this.paintableTexture.Paint(this.renderer,this.camera,this.rootNode,new THREE.Vector3(0,10000,0));
         }
 
         this.renderer.render(this, this.camera);
-
         if(this.foldoutMaterial)
         {
             this.foldoutMaterial["uniforms"].uTime.value += 0.01;
@@ -267,12 +296,35 @@ export default class WhiteboardDemoScene extends SceneBase {a
 
     }
 
-    Paint(cursorPostion:THREE.Vector2){
-        let pos = this.scenePicker(this, this.camera, cursorPostion);
-
-        if (!pos) {
+    Paint(pointerInfo:Pointer){
+        //let pos = this.scenePicker(this, this.camera, cursorPostion);
+        if (!pointerInfo) {
             return;
         }
+
+        this.sphere.visible = false;
+        let depth = this.depthTest.pick(pointerInfo.cssPosition, this, this.renderer, this.camera);
+        console.log(depth)
+        this.sphere.visible=true;
+        if(depth >= (this.camera.far - (this.camera.far * 0.001)))
+        {
+            //Probably casting against the skybox
+            return;
+        }
+
+        let pos = new THREE.Vector3(0,0,0);
+
+        let ray = new THREE.Ray()
+        ray.origin.setFromMatrixPosition(this.camera.matrixWorld);
+        ray.direction.set(pointerInfo.position.x, pointerInfo.position.y, depth)
+
+        this.raycaster.setFromCamera(pointerInfo.position, this.camera);
+        let ray2= this.raycaster.ray;
+
+        console.log(this.raycaster.ray.direction, this.raycaster.ray.direction.length());
+        pos.add(ray.origin).add(ray.direction.multiplyScalar(depth));
+
+        this.sphere.position.copy(pos);
         this.paintableTexture.Paint(this.renderer,this.camera, this.rootNode, pos);
     }
 

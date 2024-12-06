@@ -153,7 +153,7 @@ export class PaintableTexture
         // Read the pixel data from the render target
         const pixelBuffer = new Uint8Array(this.RenderTarget.width * this.RenderTarget.height * 4);
         renderer.readRenderTargetPixels(this.RenderTarget, 0, 0, this.RenderTarget.width, this.RenderTarget.height, pixelBuffer);
-
+        
         // Create a canvas and draw the pixel data onto it
         const canvas = document.createElement('canvas');
         canvas.width = this.RenderTarget.width;

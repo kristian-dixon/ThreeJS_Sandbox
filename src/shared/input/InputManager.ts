@@ -131,7 +131,7 @@ export class InputManager{
 
         if(!pointer)
         {
-            pointer = new Pointer(ClientSpaceToNormalizedSpace(event.clientX,event.clientY)); 
+            pointer = new Pointer(new THREE.Vector2(event.clientX, event.clientY), ClientSpaceToNormalizedSpace(event.clientX,event.clientY)); 
             this.pointers.set(event.pointerId,pointer);
         }
 
@@ -152,10 +152,11 @@ export class InputManager{
 
         if(!pointer)
         {
-            pointer = new Pointer(ClientSpaceToNormalizedSpace(event.clientX,event.clientY)); 
+            pointer = new Pointer(new THREE.Vector2(event.clientX, event.clientY), ClientSpaceToNormalizedSpace(event.clientX,event.clientY)); 
             this.pointers.set(event.pointerId,pointer);
         }
 
+        pointer.cssPosition = new THREE.Vector2(event.clientX, event.clientY);
         pointer.position = ClientSpaceToNormalizedSpace(event.clientX, event.clientY);
         this.pointers.set(event.pointerId, pointer);
     }
@@ -166,10 +167,12 @@ export class InputManager{
 }
 
 export class Pointer{
+    cssPosition: THREE.Vector2 = new THREE.Vector2(0,0);
     position: THREE.Vector2 = new THREE.Vector2(0,0);
     isDown = false;
-    constructor(pos:THREE.Vector2)
+    constructor(cssPos: THREE.Vector2, pos:THREE.Vector2)
     {
+        this.cssPosition =cssPos;
         this.position=pos;
     }
 }
