@@ -46,18 +46,15 @@ export class DepthPick
 
                     float readDepth( sampler2D depthSampler, vec2 coord ) {
                         float fragCoordZ = texture2D( depthSampler, coord ).x;
+                        return fragCoordZ;
                         float viewZ = perspectiveDepthToViewZ( fragCoordZ, cameraNear, cameraFar );
                         return viewZ;
                     }
 
                     void main() {
                         float depth = readDepth( depthTexture, vec2(0.5,0.5) );
-
                         gl_FragColor.rgb =  (vec3( depth ));
                         gl_FragColor.a = 1.0;
-                        gl_FragColor.gb = vec2(0);
-
-                        //gl_FragColor = texture2D( depthTexture, vUv );
                     }
                 `,
 
@@ -102,7 +99,6 @@ export class DepthPick
             1,   // width
             1,   // height
             this.pixelBuffer);
-
 
         return Math.abs(this.pixelBuffer[0]);
     }

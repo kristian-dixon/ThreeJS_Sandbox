@@ -88,6 +88,7 @@ export class PaintableTexture
                     }
                 }
             }
+
         })
 
         renderer.render(root, camera);

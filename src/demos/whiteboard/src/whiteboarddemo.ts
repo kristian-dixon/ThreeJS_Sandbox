@@ -27,7 +27,7 @@ import CubeMap_py from "../textures/cubemap/py.png";
 import CubeMap_nz from "../textures/cubemap/pz.png";
 
 import { PaintableTexture } from '../../../shared/meshpainting/scripts/PaintableSurface';
-import GlbTest from "../models/Quad.glb"
+import GlbTest from "../models/cursedchunky.glb"
 import { DepthPick } from '../../../shared/picking/depthpick';
 
 
@@ -188,12 +188,12 @@ export default class WhiteboardDemoScene extends SceneBase {a
         });
 
         //this.add(new THREE.Mesh(new THREE.PlaneGeometry(), this.foldoutMaterial));
-        // let plane = new THREE.Mesh(new THREE.PlaneGeometry());
-        // plane.rotateX(-1.57)
-        // plane.position.set(0,-1,0)
-        // plane.scale.set(1000,1000,1000);
+        let plane = new THREE.Mesh(new THREE.PlaneGeometry());
+        plane.rotateX(-1.57)
+        plane.position.set(0,-1,0)
+        plane.scale.set(1000,1000,1000);
 
-        // this.add(plane);
+        //this.add(plane);
 
         this["sphere"] = new THREE.Mesh(new THREE.SphereGeometry(0.12));
         (this.sphere.material as any).color = new THREE.Color("yellow");
@@ -211,7 +211,7 @@ export default class WhiteboardDemoScene extends SceneBase {a
         this.gltfLoader.load(model, (gltf)=>{
             let bounds = new THREE.Box3().setFromObject(gltf.scene);
             let boundsSize = bounds.getSize(new THREE.Vector3())
-            let scale = 8.0/Math.max(boundsSize.x, boundsSize.y, boundsSize.z);
+            let scale = 3.0/Math.max(boundsSize.x, boundsSize.y, boundsSize.z);
 
             let center = bounds.getCenter(new THREE.Vector3());
             center = center.multiplyScalar(-scale);
@@ -248,8 +248,7 @@ export default class WhiteboardDemoScene extends SceneBase {a
             
             if(gltf.animations.length > 0){
                 self.animationMixer = new THREE.AnimationMixer(gltf.scene);
-                //self.animationMixer.clipAction(gltf.animations[0]).play().stop();
-                
+                //self.animationMixer.clipAction(gltf.animations[0]).play();
             }
         })
     }
@@ -265,7 +264,7 @@ export default class WhiteboardDemoScene extends SceneBase {a
 
     timeModifier = 0;
     update() {
-        let dt = this.timeModifier;//this.clock.getDelta();
+        let dt = this.clock.getDelta();
         this.camera.position.set(0,0,0);
         this.camera.rotateY(0.6 * dt);
         this.camera.translateZ(8);
@@ -295,7 +294,7 @@ export default class WhiteboardDemoScene extends SceneBase {a
         }
 
     }
-
+ 
     Paint(pointerInfo:Pointer){
         //let pos = this.scenePicker(this, this.camera, cursorPostion);
         if (!pointerInfo) {
@@ -304,7 +303,6 @@ export default class WhiteboardDemoScene extends SceneBase {a
 
         this.sphere.visible = false;
         let depth = this.depthTest.pick(pointerInfo.cssPosition, this, this.renderer, this.camera);
-        console.log(depth)
         this.sphere.visible=true;
         if(depth >= (this.camera.far - (this.camera.far * 0.001)))
         {
@@ -312,18 +310,9 @@ export default class WhiteboardDemoScene extends SceneBase {a
             return;
         }
 
-        let pos = new THREE.Vector3(0,0,0);
-
-        let ray = new THREE.Ray()
-        ray.origin.setFromMatrixPosition(this.camera.matrixWorld);
-        ray.direction.set(pointerInfo.position.x, pointerInfo.position.y, depth)
-
-        this.raycaster.setFromCamera(pointerInfo.position, this.camera);
-        let ray2= this.raycaster.ray;
-
-        console.log(this.raycaster.ray.direction, this.raycaster.ray.direction.length());
-        pos.add(ray.origin).add(ray.direction.multiplyScalar(depth));
-
+        let remappedDepth = (depth*2)-1.0;
+        let pos = new THREE.Vector3(pointerInfo.position.x, pointerInfo.position.y,remappedDepth).unproject(this.camera);
+        console.log(new THREE.Vector3().add(pos).sub(this.camera.position))
         this.sphere.position.copy(pos);
         this.paintableTexture.Paint(this.renderer,this.camera, this.rootNode, pos);
     }
