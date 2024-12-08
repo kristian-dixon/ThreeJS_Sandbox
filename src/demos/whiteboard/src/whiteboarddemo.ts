@@ -56,9 +56,8 @@ export default class WhiteboardDemoScene extends SceneBase {
             antialias: true
            // preserveDrawingBuffer:true -- this is for the canvas
         });
-        let canvas = null as HTMLCanvasElement;
-        this.renderer.setSize(this.width, this.height);
 
+        this.renderer.setSize(this.width, this.height);
         this.setupScene();
 
         this.input=InputManager.Get();
@@ -161,18 +160,31 @@ export default class WhiteboardDemoScene extends SceneBase {
             defines:{
                 OUTPUT_HEIGHTMAP: false,
                 OUTPUT_BRUSHPOSITION: false,
-                OUTPUT_RAW_TEXTURE: true
-            }
+                OUTPUT_RAW_TEXTURE: true,
+                FIX_ASPECT:true
+            },
+            side: THREE.DoubleSide
+        });
+
+        this.foldoutMaterial =  new THREE.ShaderMaterial({
+            uniforms:{
+                uTime:{value:0},
+                uGradient:{value:gradientTex},
+                uMap:{value:this.paintableTexture.RenderTarget.texture},
+                uRatio:{value:this.camera.aspect}
+            },
+            vertexShader:FoldoutShaderVert,
+            fragmentShader:FoldoutShaderFrag,
+            defines:{
+                OUTPUT_HEIGHTMAP: false,
+                OUTPUT_BRUSHPOSITION: false,
+                OUTPUT_RAW_TEXTURE: true,
+                FOLDOUT_EFFECT: true
+            },
+            side: THREE.DoubleSide
         });
 
         this.add(new THREE.Mesh(new THREE.PlaneGeometry(), this.paintPreviewMaterial));
-        
-
-        //this.add(plane);
-      
-      
-
-
     }
 
     loadModel(model:any){
@@ -231,11 +243,48 @@ export default class WhiteboardDemoScene extends SceneBase {
 
             gltf.scene.scale.set(scale,scale,scale);
             self.rootNode.add(gltf.scene);
-            this.gltf = gltf.scene;
+            self.gltf = gltf.scene;
             
             if(gltf.animations.length > 0){
                 self.animationMixer = new THREE.AnimationMixer(gltf.scene);
                 //self.animationMixer.clipAction(gltf.animations[0]).play();
+            }
+
+            self.setupFoldoutEffect();
+        })
+    }
+
+    foldoutRoot: THREE.Group;
+    foldoutMaterial: THREE.Material;
+    foldoutDirection: number = 1.0;
+    setupFoldoutEffect()
+    {
+        let visibility = false;
+        //TODO Cleanup old
+        if(this.foldoutRoot){
+            visibility = this.foldoutRoot.visible;
+            this.rootNode.remove(this.foldoutRoot);
+        }
+
+        this.foldoutRoot = this.gltf.clone(true);
+        this.foldoutRoot.visible = visibility;
+
+        this.rootNode.add(this.foldoutRoot);
+        let self = this;
+        this.foldoutRoot.traverse(child=>{
+            if(child instanceof THREE.Mesh)
+            {
+                if(child.material as THREE.Material){
+
+                    child.material = self.foldoutMaterial ;
+                }
+                else
+                {
+                    for(let i = 0; i < child.material.length; i++)
+                    {
+                        child.material[i] = self.foldoutMaterial;
+                    }
+                }
             }
         })
     }
@@ -247,6 +296,35 @@ export default class WhiteboardDemoScene extends SceneBase {
             return intersections[0].point;
         }
         return null;
+    }
+
+    unfoldModel(){
+        this.gltf.visible = false;
+        this.foldoutRoot.visible = true;
+        this.foldoutMaterial["uniforms"].uTime.value = 0;
+        this.foldoutDirection = 1.0;      
+    }
+
+    foldModel(){
+        this.foldoutMaterial["uniforms"].uTime.value = 1; 
+        this.foldoutDirection = -1.0;  
+        setTimeout(()=>{
+            if(this.foldoutDirection == 1.0){return;}
+            this.gltf.visible = true;
+            this.foldoutRoot.visible = false;
+        }, 1000)
+    }
+
+    setTexturePreviewVisibility(isVisible:boolean){
+        this.paintPreviewMaterial.visible = isVisible;
+    }
+
+    setBrushColour(colour:string){
+        this.paintableTexture.SetColor(colour);
+    }
+
+    setBrushRadius(radius:number){
+        this.paintableTexture.SetBrushRadius(radius);
     }
 
     update() {
@@ -270,8 +348,13 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.renderer.render(this, this.camera);
         if(this.paintPreviewMaterial)
         {
-            this.paintPreviewMaterial["uniforms"].uTime.value += 0.01;
+            this.paintPreviewMaterial["uniforms"].uTime.value += dt;
             this.paintPreviewMaterial.needsUpdate = true;
+        }
+
+        if(this.foldoutMaterial){
+            this.foldoutMaterial["uniforms"].uTime.value += dt * this.foldoutDirection;
+            this.foldoutMaterial.needsUpdate = true;
         }
 
         if(this.animationMixer)
@@ -329,6 +412,8 @@ export default class WhiteboardDemoScene extends SceneBase {
     recieveMessage(call: string, args: any) {
         this[call](args);
     }
+
+    
 
     /**
      * Given a ThreeJS camera and renderer, resizes the scene if the
