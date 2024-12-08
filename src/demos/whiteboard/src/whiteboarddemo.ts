@@ -13,8 +13,8 @@ import { InputManager, Pointer } from '../../../shared/input/InputManager';
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 
 import { PaintableTexture } from '../../../shared/meshpainting/scripts/PaintableSurface';
-import GlbTest from "../models/smooth_suzanne.glb"
 import { DepthPick } from '../../../shared/picking/depthpick';
+import GlbTest from "../models/CesiumMilkTruck.glb"
 
 export default class WhiteboardDemoScene extends SceneBase {
     camera: THREE.PerspectiveCamera = null;
@@ -103,12 +103,7 @@ export default class WhiteboardDemoScene extends SceneBase {
         textureUploader.addEventListener("change", (evt)=>{
             var userImageURL = URL.createObjectURL( textureUploader.files[0] );
         
-            var loader = new THREE.TextureLoader();
-            loader.setCrossOrigin("");
-            let tex = loader.load(userImageURL); 
-            tex.wrapS = THREE.RepeatWrapping;
-            tex.wrapT = THREE.RepeatWrapping;
-            this.paintableTexture.Import(self.renderer,self.camera,tex);
+            this.loadTexture(userImageURL);
             //this.foldoutMaterial["uniforms"].uMap.value = tex;
         })
 
@@ -315,6 +310,24 @@ export default class WhiteboardDemoScene extends SceneBase {
         }, 1000)
     }
 
+    export(){
+        this.paintableTexture.Export(this.renderer);
+    }
+
+    loadTexture(uri:string){
+        var loader = new THREE.TextureLoader();
+        loader.setCrossOrigin("");
+        let tex = loader.load(uri); 
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        this.paintableTexture.Import(this.renderer,this.camera,tex);
+    }
+
+    cameraOrbitEnabled = true;
+    setCameraOrbit(cameraOrbitEnabled){
+        this.cameraOrbitEnabled = cameraOrbitEnabled;
+    }
+
     setTexturePreviewVisibility(isVisible:boolean){
         this.paintPreviewMaterial.visible = isVisible;
     }
@@ -327,14 +340,23 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.paintableTexture.SetBrushRadius(radius);
     }
 
+    setCameraPitch(pitch:number){
+        this.camera.rotation.setFromVector3(new THREE.Vector3(pitch,this.camera.rotation.y,0));
+    }
+
+    setCameraYaw(yaw:number){
+        this.camera.rotation.setFromVector3(new THREE.Vector3(this.camera.rotation.x, yaw,0));
+    }
+
     update() {
         let dt = this.clock.getDelta();
         this.camera.position.set(0,0,0);
-        this.camera.rotateY(0.6 * dt);
+        if(this.cameraOrbitEnabled){
+            this.camera.rotateY(0.6 * dt);
+        }
         this.camera.translateZ(8);
         this.camera.updateProjectionMatrix();
 
-        
         this.input.pointers.forEach((value,key)=>{
             if(value.isDown){
                 this.Paint(value);
