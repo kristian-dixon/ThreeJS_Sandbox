@@ -14,10 +14,11 @@ export class PaintableTexture
 
     Settings = {
         brushPos: {value: new THREE.Vector3(0,0,0)},
-        color: {value: new THREE.Color(255,255,255)},
-        blendStrength: {value: 0.1},
+        color: {value: new THREE.Color(0,0,0)},
+        blendStrength: {value: 0.5},
         brushRadius: {value: 0.1},
-        brushFalloff: {value: 0.5}
+        brushFalloff: {value: 0.5},
+        jitter: {value:new THREE.Vector2(0,0)}
     }
 
     constructor(rtWidth:number, rtHeight: number){
@@ -63,6 +64,7 @@ export class PaintableTexture
     Paint(renderer:THREE.WebGLRenderer, camera:THREE.Camera, root:THREE.Object3D, brushPosition:THREE.Vector3)
     {
         this.PaintMaterial["uniforms"].brushPos.value = brushPosition;
+        this.PaintMaterial["uniforms"].jitter.value = new THREE.Vector3((Math.random()*2.0-1.0)*0.01,(Math.random()*2.0-1.0)*0.01);
         renderer.autoClearColor = false;
         renderer.setRenderTarget(this.RenderTarget);
         

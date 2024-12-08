@@ -24,8 +24,6 @@ export class DepthPick
         this.depthTextureReader.texture.generateMipmaps = false;
         
         this.pixelBuffer = new Float32Array(4);
-        camera.near = 3;
-        camera.far = 10;
         this.blitMesh = new THREE.Mesh(new THREE.PlaneGeometry(),new THREE.ShaderMaterial(
             {
                 vertexShader:

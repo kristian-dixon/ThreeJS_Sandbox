@@ -1,13 +1,6 @@
 import * as THREE from 'three';
 import { GUI } from 'dat.gui';
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
-
-import PaintShaderVert from "../shaders/paintbrush.vs";
-import PaintShaderFrag from "../shaders/paintbrush.fs";
-
-import PlanetShaderVert from "../shaders/planet/vertex.vs"
-import PlanetShaderFrag from "../shaders/planet/frag.fs"
 
 import FoldoutShaderVert from "../shaders/planet_foldout/vertex.vs"
 import FoldoutShaderFrag from "../shaders/planet_foldout/frag.fs"
@@ -19,23 +12,11 @@ import { InputManager, Pointer } from '../../../shared/input/InputManager';
 
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 
-import CubeMap_nx from "../textures/cubemap/nx.png";
-import CubeMap_ny from "../textures/cubemap/ny.png";
-import CubeMap_pz from "../textures/cubemap/nz.png";
-import CubeMap_px from "../textures/cubemap/px.png";
-import CubeMap_py from "../textures/cubemap/py.png";
-import CubeMap_nz from "../textures/cubemap/pz.png";
-
 import { PaintableTexture } from '../../../shared/meshpainting/scripts/PaintableSurface';
-import GlbTest from "../models/cursedchunky.glb"
+import GlbTest from "../models/smooth_suzanne.glb"
 import { DepthPick } from '../../../shared/picking/depthpick';
 
-
-/**
- * A class to set up some basic scene elements to minimize code in the
- * main execution file.
- */
-export default class WhiteboardDemoScene extends SceneBase {a
+export default class WhiteboardDemoScene extends SceneBase {
     camera: THREE.PerspectiveCamera = null;
     renderer: THREE.WebGLRenderer = null;
 
@@ -45,16 +26,13 @@ export default class WhiteboardDemoScene extends SceneBase {a
 
     currentPage = 0;
 
-    sphere: THREE.Mesh;
     raycaster: THREE.Raycaster;
 
     input:InputManager;
     rootNode: THREE.Object3D;
     clock:THREE.Clock;
 
-    foldoutMaterial: THREE.Material;
-
-    blitQuad: THREE.Object3D;
+    paintPreviewMaterial: THREE.Material;
 
     animationMixer: THREE.AnimationMixer;
 
@@ -63,19 +41,19 @@ export default class WhiteboardDemoScene extends SceneBase {a
     gltfLoader = new GLTFLoader();
     gltf: THREE.Group;
 
-
     depthTest:DepthPick;
 
+    
     initialize(debug: boolean = true, addGridHelper: boolean = true) {
         this.clock = new THREE.Clock(true);
-        this.camera = new THREE.PerspectiveCamera(35, this.width / this.height, .1, 100);
+        this.camera = new THREE.PerspectiveCamera(40, this.width / this.height, 1, 20);
         this.camera.position.z = 8;
         this.camera.lookAt(0, 0, 0);
 
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById("app") as HTMLCanvasElement,
             alpha: true, 
-            
+            antialias: true
            // preserveDrawingBuffer:true -- this is for the canvas
         });
         let canvas = null as HTMLCanvasElement;
@@ -85,8 +63,7 @@ export default class WhiteboardDemoScene extends SceneBase {a
 
         this.input=InputManager.Get();
         this.raycaster = new THREE.Raycaster();
-        WhiteboardDemoScene.addWindowResizing(this.camera, this.renderer);
-
+        WhiteboardDemoScene.addWindowResizing(this.camera, this.renderer, this.paintPreviewMaterial);
         window["scene"] = this;
 
         this.initStandaloneUI();
@@ -151,9 +128,9 @@ export default class WhiteboardDemoScene extends SceneBase {a
         this.debugger.add(buttonsFuncs, "textureImporter").name("Load Texture");
         this.debugger.add(buttonsFuncs, "modelLoader").name("Load Model");
 
-
-
     }
+
+
 
     private setupScene() {
         const light = new THREE.DirectionalLight(0xffffff, 5);
@@ -172,11 +149,12 @@ export default class WhiteboardDemoScene extends SceneBase {a
         this.loadModel(GlbTest);
 
         let gradientTex = new THREE.TextureLoader().load(GradientTexturePath);
-        this.foldoutMaterial = new THREE.ShaderMaterial({
+        this.paintPreviewMaterial = new THREE.ShaderMaterial({
             uniforms:{
                 uTime:{value:0.9999},
                 uGradient:{value:gradientTex},
-                uMap:{value:this.paintableTexture.RenderTarget.texture}
+                uMap:{value:this.paintableTexture.RenderTarget.texture},
+                uRatio:{value:this.camera.aspect}
             },
             vertexShader:FoldoutShaderVert,
             fragmentShader:FoldoutShaderFrag,
@@ -187,17 +165,14 @@ export default class WhiteboardDemoScene extends SceneBase {a
             }
         });
 
-        //this.add(new THREE.Mesh(new THREE.PlaneGeometry(), this.foldoutMaterial));
-        let plane = new THREE.Mesh(new THREE.PlaneGeometry());
-        plane.rotateX(-1.57)
-        plane.position.set(0,-1,0)
-        plane.scale.set(1000,1000,1000);
+        this.add(new THREE.Mesh(new THREE.PlaneGeometry(), this.paintPreviewMaterial));
+        
 
         //this.add(plane);
+      
+      
 
-        this["sphere"] = new THREE.Mesh(new THREE.SphereGeometry(0.12));
-        (this.sphere.material as any).color = new THREE.Color("yellow");
-        this.add(this.sphere);
+
     }
 
     loadModel(model:any){
@@ -217,11 +192,18 @@ export default class WhiteboardDemoScene extends SceneBase {a
             center = center.multiplyScalar(-scale);
            
             gltf.scene.position.copy(center);
+            
+            let textureSet = false;
 
             gltf.scene.traverse(child=>{
                 if(child instanceof THREE.Mesh)
                 {
                     if(child.material as THREE.Material){
+                        if(child.material["map"] as THREE.Texture && textureSet == false){
+                            self.paintableTexture.Import(self.renderer, self.camera, child.material["map"]);
+                            textureSet = true;
+                        }
+
                         child.material["map"] = self.paintableTexture.RenderTarget.texture;
                         if(child.material["metalness"] == 1)
                         {
@@ -232,7 +214,12 @@ export default class WhiteboardDemoScene extends SceneBase {a
                     {
                         for(let i = 0; i < child.material.length; i++)
                         {
-                            child.material[i]["map"] = self.paintableTexture.RenderTarget.texture;
+                            if(child.material[i]["map"] as THREE.Texture && textureSet == false){
+                                textureSet = true;
+                                self.paintableTexture.Import(self.renderer, self.camera, child.material[i]["map"]);
+                            }
+
+                            child.material[i]["map"] = self.paintableTexture.RenderTarget.texture
                             if(child.material["metalness"] == 1)
                             {
                                 child.material["metalness"] = 0;
@@ -262,7 +249,6 @@ export default class WhiteboardDemoScene extends SceneBase {a
         return null;
     }
 
-    timeModifier = 0;
     update() {
         let dt = this.clock.getDelta();
         this.camera.position.set(0,0,0);
@@ -282,10 +268,10 @@ export default class WhiteboardDemoScene extends SceneBase {a
         }
 
         this.renderer.render(this, this.camera);
-        if(this.foldoutMaterial)
+        if(this.paintPreviewMaterial)
         {
-            this.foldoutMaterial["uniforms"].uTime.value += 0.01;
-            this.foldoutMaterial.needsUpdate = true;
+            this.paintPreviewMaterial["uniforms"].uTime.value += 0.01;
+            this.paintPreviewMaterial.needsUpdate = true;
         }
 
         if(this.animationMixer)
@@ -301,9 +287,7 @@ export default class WhiteboardDemoScene extends SceneBase {a
             return;
         }
 
-        this.sphere.visible = false;
         let depth = this.depthTest.pick(pointerInfo.cssPosition, this, this.renderer, this.camera);
-        this.sphere.visible=true;
         if(depth >= (this.camera.far - (this.camera.far * 0.001)))
         {
             //Probably casting against the skybox
@@ -312,8 +296,6 @@ export default class WhiteboardDemoScene extends SceneBase {a
 
         let remappedDepth = (depth*2)-1.0;
         let pos = new THREE.Vector3(pointerInfo.position.x, pointerInfo.position.y,remappedDepth).unproject(this.camera);
-        console.log(new THREE.Vector3().add(pos).sub(this.camera.position))
-        this.sphere.position.copy(pos);
         this.paintableTexture.Paint(this.renderer,this.camera, this.rootNode, pos);
     }
 
@@ -354,14 +336,15 @@ export default class WhiteboardDemoScene extends SceneBase {a
      * @param camera - a ThreeJS PerspectiveCamera object.
      * @param renderer - a subclass of a ThreeJS Renderer object.
      */
-    static addWindowResizing(camera: THREE.PerspectiveCamera, renderer: THREE.Renderer) {
+    static addWindowResizing(camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer, foldoutMaterial: THREE.Material) {
         window.addEventListener('resize', onWindowResize, false);
         function onWindowResize() {
-
             // uses the global window widths and height
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+
+            foldoutMaterial["uniforms"].uRatio.value = camera.aspect;
         }
     }
 }
