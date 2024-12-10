@@ -70,20 +70,39 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.depthTest = new DepthPick(this.camera);
     }
 
-    debugger:GUI;
+    gui:GUI;
     private initStandaloneUI()
     {
         if(window.self != window.top){
-            return;
+            //return;
         }
-        this.debugger = new GUI();
+        this.gui = new GUI(
+            {
+                closed:true,
+                closeOnTop:true
+            }
 
-        this.debugger.addColor(this.paintableTexture,'brushColor').onChange(()=>{
+        );
+
+        this.gui.close();
+
+        let brushSettings = this.gui.addFolder("Brush Settings");
+        let brushColor = brushSettings.addColor(this.paintableTexture,'brushColor');
+        brushColor.onChange(()=>{
             this.paintableTexture.SetColor(this.paintableTexture.brushColor);
-        })
+        });
+        brushColor.setValue(0x000000)
+        brushColor.name("Colour");
 
-        this.debugger.add(this.paintableTexture.Settings.blendStrength,'value').name("Blend Strength");
-        this.debugger.add(this.paintableTexture.Settings.brushRadius,'value').name("Brush Radius");
+        brushSettings.add(this.paintableTexture.Settings.blendStrength,'value').name("Blend Strength");
+        brushSettings.add(this.paintableTexture.Settings.brushRadius,'value').name("Brush Radius");
+
+
+        let cameraSettings = this.gui.addFolder("Camera Settings");
+        cameraSettings.add(this, "cameraOrbitEnabled").name("Orbit Camera");
+        cameraSettings.add(this.camera.rotation, "x", -3.14, 3.14, 0.01);
+        cameraSettings.add(this.camera.rotation, "y", -3.14, 3.14, 0.01);
+
 
         let modelUploader = document.createElement("input")
         modelUploader.type = "file" 
@@ -118,9 +137,9 @@ export default class WhiteboardDemoScene extends SceneBase {
                 textureUploader.click();
             }
         }
-        this.debugger.add(buttonsFuncs, "textureExporter").name("Save Texture");
-        this.debugger.add(buttonsFuncs, "textureImporter").name("Load Texture");
-        this.debugger.add(buttonsFuncs, "modelLoader").name("Load Model");
+        this.gui.add(buttonsFuncs, "textureExporter").name("Save Texture");
+        this.gui.add(buttonsFuncs, "textureImporter").name("Load Texture");
+        this.gui.add(buttonsFuncs, "modelLoader").name("Load Model");
 
     }
 
@@ -160,6 +179,7 @@ export default class WhiteboardDemoScene extends SceneBase {
             },
             side: THREE.DoubleSide
         });
+        this.paintPreviewMaterial.visible = false;
 
         this.foldoutMaterial =  new THREE.ShaderMaterial({
             uniforms:{
@@ -308,6 +328,15 @@ export default class WhiteboardDemoScene extends SceneBase {
             this.gltf.visible = true;
             this.foldoutRoot.visible = false;
         }, 1000)
+    }
+
+    setUnfolded(val:boolean){
+        if(val){
+            this.unfoldModel()
+        }
+        else{
+            this.foldModel();
+        }
     }
 
     export(){
