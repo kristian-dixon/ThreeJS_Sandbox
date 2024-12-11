@@ -7,14 +7,14 @@ export class PaintableTexture
 {
     RenderTarget: THREE.WebGLRenderTarget;
     PaintMaterial: THREE.Material;
-    brushColor= 0xffffff;
+    brushColor= 0xff0000;
 
     blitMaterial: THREE.Material;
     quad: THREE.Mesh;
 
     Settings = {
         brushPos: {value: new THREE.Vector3(0,0,0)},
-        color: {value: new THREE.Color(0,0,0)},
+        color: {value: new THREE.Color(1,0,0)},
         blendStrength: {value: 0.5},
         brushRadius: {value: 0.1},
         brushFalloff: {value: 0.5},

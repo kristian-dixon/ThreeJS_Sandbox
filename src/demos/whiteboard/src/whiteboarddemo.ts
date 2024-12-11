@@ -70,6 +70,7 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.depthTest = new DepthPick(this.camera);
     }
 
+    pointerPosition: THREE.Vec2 = new THREE.Vector2(-1000,-1000);
     gui:GUI;
     private initStandaloneUI()
     {
@@ -78,20 +79,23 @@ export default class WhiteboardDemoScene extends SceneBase {
         }
         this.gui = new GUI(
             {
-                closed:true,
+                //closed:true,
                 closeOnTop:true
             }
 
         );
 
-        this.gui.close();
+        //this.gui.close();
+
+        this.gui.add(this.pointerPosition, "x").name("PointerPosition x");
+        this.gui.add(this.pointerPosition, "y").name("PointerPosition y");
 
         let brushSettings = this.gui.addFolder("Brush Settings");
         let brushColor = brushSettings.addColor(this.paintableTexture,'brushColor');
         brushColor.onChange(()=>{
             this.paintableTexture.SetColor(this.paintableTexture.brushColor);
         });
-        brushColor.setValue(0x000000)
+        brushColor.setValue(0xff0000)
         brushColor.name("Colour");
 
         brushSettings.add(this.paintableTexture.Settings.blendStrength,'value').name("Blend Strength");
@@ -104,6 +108,8 @@ export default class WhiteboardDemoScene extends SceneBase {
         cameraSettings.add(this.camera.rotation, "y", -3.14, 3.14, 0.01);
 
 
+        this.gui.add(this.paintPreviewMaterial, "visible").name("Toggle Paint Preview");
+
         let modelUploader = document.createElement("input")
         modelUploader.type = "file" 
         modelUploader.accept = ".glb"
@@ -113,8 +119,7 @@ export default class WhiteboardDemoScene extends SceneBase {
             let modelUrl = URL.createObjectURL( modelUploader.files[0] );
             self.loadModel(modelUrl);
         })
-
-
+     
         let textureUploader = document.createElement("input")
         textureUploader.type = "file" 
         textureUploader.accept = ".png"
@@ -387,6 +392,10 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.camera.updateProjectionMatrix();
 
         this.input.pointers.forEach((value,key)=>{
+            this.pointerPosition.x = value.cssPosition.x;
+            this.pointerPosition.y = value.cssPosition.y;
+            this.gui.updateDisplay();
+        
             if(value.isDown){
                 this.Paint(value);
             }
