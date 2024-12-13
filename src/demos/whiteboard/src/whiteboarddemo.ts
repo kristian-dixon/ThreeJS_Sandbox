@@ -470,6 +470,12 @@ export default class WhiteboardDemoScene extends SceneBase {
     }
 
     recieveMessage(call: string, args: any) {
+        if(call.startsWith('event:')){
+            this.input.ExternalInputEvent(call, args);
+            return;
+        }
+
+
         this[call](args);
     }
 

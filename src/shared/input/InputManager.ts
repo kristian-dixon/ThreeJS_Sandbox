@@ -62,6 +62,7 @@ export class Touches{
 
     constructor()
     {
+        
         window.addEventListener('touchstart', this.OnTouchStart.bind(this), {passive:false})
         window.addEventListener('touchmove', this.OnTouchChanged.bind(this))
         window.addEventListener('touchend', this.OnTouchEnd.bind(this))       
@@ -118,13 +119,43 @@ export class InputManager{
     }
 
     private constructor(){   
-        window.addEventListener('pointerdown', this.OnPointerDown.bind(this))
-        window.addEventListener('pointerup', this.OnPointerUp.bind(this))
 
-        window.addEventListener('pointermove', this.OnPointerMove.bind(this));
-        window.addEventListener('pointercancel', this.OnDestroyPointer.bind(this))
+        if(window.self != window.top)
+        {
+            //return;
+        }
+
+        let canvas = document.getElementById('app');
+        console.log(canvas);
+        canvas.addEventListener('contextmenu', (e)=>{e.preventDefault();})
+
+        canvas.addEventListener('pointerdown', this.OnPointerDown.bind(this))
+        canvas.addEventListener('pointerup', this.OnPointerUp.bind(this))
+
+        canvas.addEventListener('pointermove', this.OnPointerMove.bind(this));
+        canvas.addEventListener('pointercancel', this.OnDestroyPointer.bind(this))
     }
 
+    public ExternalInputEvent(key: string, event:PointerEvent){
+        //'event:pointermove'
+        let eventName = key.substring(6);
+        console.log('event name: ', eventName);
+        switch(eventName){
+            case 'pointerdown':
+                this.OnPointerDown(event);
+            break;
+            case 'pointerup':
+                this.OnPointerUp(event);
+            break;
+            case 'pointermove':
+                this.OnPointerMove(event);
+            break;
+            case 'pointercancel':
+                this.OnDestroyPointer(event);
+            break;
+        }
+
+    }
 
     private OnPointerDown(event:PointerEvent){
         let pointer = this.pointers.get(event.pointerId)
