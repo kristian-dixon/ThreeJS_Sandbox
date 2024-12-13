@@ -70,25 +70,20 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.depthTest = new DepthPick(this.camera);
     }
 
-    pointerPosition: THREE.Vec2 = new THREE.Vector2(-1000,-1000);
     gui:GUI;
     private initStandaloneUI()
     {
         if(window.self != window.top){
             //return;
         }
+
         this.gui = new GUI(
             {
                 //closed:true,
                 closeOnTop:true
             }
 
-        );
-
-        //this.gui.close();
-
-        this.gui.add(this.pointerPosition, "x").name("PointerPosition x");
-        this.gui.add(this.pointerPosition, "y").name("PointerPosition y");
+        );    
 
         let brushSettings = this.gui.addFolder("Brush Settings");
         let brushColor = brushSettings.addColor(this.paintableTexture,'brushColor');
@@ -392,8 +387,6 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.camera.updateProjectionMatrix();
 
         this.input.pointers.forEach((value,key)=>{
-            this.pointerPosition.x = value.cssPosition.x;
-            this.pointerPosition.y = value.cssPosition.y;
             this.gui.updateDisplay();
         
             if(value.isDown){
