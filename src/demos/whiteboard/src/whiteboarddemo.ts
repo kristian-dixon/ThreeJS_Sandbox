@@ -79,12 +79,13 @@ export default class WhiteboardDemoScene extends SceneBase {
 
         this.gui = new GUI(
             {
-                //closed:true,
+                closed:true,
                 closeOnTop:true
             }
 
         );    
-
+        this.gui.close();
+        
         let brushSettings = this.gui.addFolder("Brush Settings");
         let brushColor = brushSettings.addColor(this.paintableTexture,'brushColor');
         brushColor.onChange(()=>{
