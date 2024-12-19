@@ -40,7 +40,7 @@ export default class UVDisplacementScene extends SceneBase{
 
     clock:THREE.Clock;
 
-    paintableTexture: PaintableTexture = new PaintableTexture(512,512);
+    paintableTexture: PaintableTexture = new PaintableTexture(512,512, {BrushSettings:{brushRadius:{value:0.05}, blendStrength:{value:0.125}}});
     depthPicker: DepthPick;
 
     input:InputManager;

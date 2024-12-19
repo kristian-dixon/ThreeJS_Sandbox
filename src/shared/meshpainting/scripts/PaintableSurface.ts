@@ -26,8 +26,6 @@ export class PaintableTexture
     blitMaterial: THREE.Material;
     quad: THREE.Mesh;
 
-
-
     Settings = {
         brushPos: {value: new THREE.Vector3(0,0,0)},
         color: {value: new THREE.Color(1,0,0)},
