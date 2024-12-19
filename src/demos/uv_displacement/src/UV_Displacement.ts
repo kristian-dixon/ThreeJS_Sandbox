@@ -24,7 +24,7 @@ export default class UVDisplacementScene extends SceneBase{
     }
 
     // A dat.gui class debugger that is added by default
-    debugger: GUI = null;
+    gui: GUI = null;
 
     // Setups a scene camera
     camera: THREE.PerspectiveCamera = null;
@@ -40,7 +40,7 @@ export default class UVDisplacementScene extends SceneBase{
 
     clock:THREE.Clock;
 
-    paintableTexture: PaintableTexture = new PaintableTexture(512,512, {BrushSettings:{brushRadius:{value:0.05}, blendStrength:{value:0.125}}});
+    paintableTexture: PaintableTexture = new PaintableTexture(512,512, {BrushSettings:{brushRadius:{value:0.025}, blendStrength:{value:1}}});
     depthPicker: DepthPick;
 
     input:InputManager;
@@ -49,7 +49,7 @@ export default class UVDisplacementScene extends SceneBase{
         this.input = InputManager.Get();
         this.clock = new THREE.Clock(true);
         this.camera = new THREE.PerspectiveCamera(35, this.width / this.height, .1, 100);
-        this.camera.position.z = 8;
+        this.camera.position.z = 4;
         this.camera.lookAt(0,0,0);
 
         this.depthPicker = new DepthPick(this.camera);
@@ -70,6 +70,7 @@ export default class UVDisplacementScene extends SceneBase{
         let fireTex = new THREE.TextureLoader().load(FireTex); 
         fireTex.wrapS = THREE.RepeatWrapping;
         fireTex.wrapT = THREE.RepeatWrapping;
+      
 
         let dispTex = new THREE.TextureLoader().load(FlowTex);
         dispTex.wrapS = THREE.RepeatWrapping;
@@ -93,7 +94,8 @@ export default class UVDisplacementScene extends SceneBase{
         this.cube = new THREE.Mesh(geometry, this.material);
         this.add(this.cube);
         
-       
+        this.paintableTexture.Import(fireTex);
+        this.paintableTexture.Paint(this.renderer,this.camera,this.cube,new THREE.Vector3(0,10000,0));
         this.initStandaloneGUI();
     }
 
@@ -110,9 +112,13 @@ export default class UVDisplacementScene extends SceneBase{
     }
 
     update(){
+        let dt = this.clock.getDelta();
         this.camera.updateProjectionMatrix();
         this.renderer.render(this, this.camera);
         
+        if(this.paintableTexture.dirty){
+            this.paintableTexture.Paint(this.renderer,this.camera,this.cube,new THREE.Vector3(0,10000,0));
+        }
 
         if(this.material){
             this.material.uniforms["Time"]["value"] += 0.016;
@@ -164,9 +170,9 @@ export default class UVDisplacementScene extends SceneBase{
 
 
     initStandaloneGUI(){
-        this.debugger =  new GUI();
+        this.gui =  new GUI();
 
-        const materialSettingsGroup = this.debugger.addFolder("Material Properties");
+        const materialSettingsGroup = this.gui.addFolder("Material Properties");
         const uvScrollGroup = materialSettingsGroup.addFolder("UV Scroll Speed");
         uvScrollGroup.add(this.material.uniforms["scrollSpeed"].value, "x");
         uvScrollGroup.add(this.material.uniforms["scrollSpeed"].value, "y");
@@ -197,5 +203,10 @@ export default class UVDisplacementScene extends SceneBase{
             }
         }
         materialSettingsGroup.add(buttonsFuncs, "mainTex").name("Set main texture")
+
+        let brushColor = this.gui.addColor(this.paintableTexture,'brushColor');
+        brushColor.onChange(()=>{
+            this.paintableTexture.SetColor(this.paintableTexture.brushColor);
+        });
     }
 }

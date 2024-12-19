@@ -21,7 +21,7 @@ export class PaintableTexture
 {
     RenderTarget: THREE.WebGLRenderTarget;
     PaintMaterial: THREE.Material;
-    brushColor= 0xff0000;
+    brushColor= 0xff0000; // for the debug gui
 
     blitMaterial: THREE.Material;
     quad: THREE.Mesh;
@@ -161,10 +161,10 @@ export class PaintableTexture
     }
 
     dirty = false;
-    Import(renderer:THREE.WebGLRenderer, camera:THREE.Camera, texture: THREE.Texture){     
+    Import(texture: THREE.Texture){     
         (this.blitMaterial as THREE.ShaderMaterial).uniforms.uMap.value = texture;
         this.dirty = true;
-        setTimeout(()=>{this.dirty = false}, 100);
+        setTimeout(()=>{this.dirty = false}, 200);
     }
 
     Export(renderer: THREE.WebGLRenderer){

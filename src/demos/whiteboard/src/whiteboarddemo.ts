@@ -228,7 +228,7 @@ export default class WhiteboardDemoScene extends SceneBase {
                 {
                     if(child.material as THREE.Material){
                         if(child.material["map"] as THREE.Texture && textureSet == false){
-                            self.paintableTexture.Import(self.renderer, self.camera, child.material["map"]);
+                            self.paintableTexture.Import(child.material["map"]);
                             textureSet = true;
                         }
 
@@ -244,7 +244,7 @@ export default class WhiteboardDemoScene extends SceneBase {
                         {
                             if(child.material[i]["map"] as THREE.Texture && textureSet == false){
                                 textureSet = true;
-                                self.paintableTexture.Import(self.renderer, self.camera, child.material[i]["map"]);
+                                self.paintableTexture.Import(child.material[i]["map"]);
                             }
 
                             child.material[i]["map"] = self.paintableTexture.RenderTarget.texture
@@ -350,7 +350,7 @@ export default class WhiteboardDemoScene extends SceneBase {
         let tex = loader.load(uri); 
         tex.wrapS = THREE.RepeatWrapping;
         tex.wrapT = THREE.RepeatWrapping;
-        this.paintableTexture.Import(this.renderer,this.camera,tex);
+        this.paintableTexture.Import(tex);
     }
 
     cameraOrbitEnabled = true;
