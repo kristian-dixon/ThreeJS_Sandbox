@@ -24,7 +24,7 @@ export default class WhiteboardDemoScene extends SceneBase {
     width = window.innerWidth;
     height = window.innerHeight;
 
-    currentPage = 0;
+
 
     raycaster: THREE.Raycaster;
 
@@ -438,33 +438,6 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.paintableTexture.Paint(this.renderer,this.camera, this.rootNode, pos);
     }
 
-   
-    changeState(pageIndex: number) {
-        if (pageIndex == this.currentPage) {
-            return;
-        }
-
-        //Exit state
-        switch (this.currentPage) {
-            case 0: {
-                break;
-            }
-            default: {
-                break;
-            }
-        }
-
-        this.currentPage = pageIndex;
-        switch (this.currentPage) {
-            case 0: {
-                break;
-            }
-            default: {
-                break;
-            }
-        }
-    }
-
     recieveMessage(call: string, args: any) {
         if(call.startsWith('event:')){
             this.input.ExternalInputEvent(call, args);
@@ -474,8 +447,6 @@ export default class WhiteboardDemoScene extends SceneBase {
 
         this[call](args);
     }
-
-    
 
     /**
      * Given a ThreeJS camera and renderer, resizes the scene if the

@@ -1,22 +1,17 @@
 import * as THREE from 'three';
 import {GUI} from 'dat.gui';
-import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 
-// import VertexShader from "./spiderman_window/parallaxmapping.vs";
-// import FragmentShader from "./spiderman_window/parallaxmapping.fs";
+
 import FireVertexShader from "../shaders/fire.vs"
 import FireFragmentShader from "../shaders/fire.fs";
 
-// import CubeMap_nx from "./textures/CubeMapClouds/nx.png";
-// import CubeMap_ny from "./textures/CubeMapClouds/ny.png";
-// import CubeMap_pz from "./textures/CubeMapClouds/nz.png";
-// import CubeMap_px from "./textures/CubeMapClouds/px.png";
-// import CubeMap_py from "./textures/CubeMapClouds/py.png";
-// import CubeMap_nz from "./textures/CubeMapClouds/pz.png";
 
 import FireTex from "../textures/fire.png"
 import FlowTex from "../textures/flowmap.png"
 import SceneBase from '../../../SceneBase';
+import { PaintableTexture } from '../../../shared/meshpainting/scripts/PaintableSurface';
+import { DepthPick } from '../../../shared/picking/depthpick';
+import { InputManager, Pointer } from '../../../shared/input/InputManager';
 
 /**
  * A class to set up some basic scene elements to minimize code in the
@@ -35,48 +30,42 @@ export default class UVDisplacementScene extends SceneBase{
     camera: THREE.PerspectiveCamera = null;
 
     // setup renderer
-    renderer: THREE.Renderer = null;
-
-    // setup Orbitals
-    orbitals: OrbitControls = null;
-
+    renderer: THREE.WebGLRenderer = null;
     material: THREE.ShaderMaterial = null;
 
-    // Get some basic params
     width = window.innerWidth;
     height = window.innerHeight;
 
     cube: THREE.Mesh;
 
-    /**
-     * Initializes the scene by adding lights, and the geometry
-     */
+    clock:THREE.Clock;
+
+    paintableTexture: PaintableTexture = new PaintableTexture(512,512);
+    depthPicker: DepthPick;
+
+    input:InputManager;
+
     initialize(debug: boolean = true, addGridHelper: boolean = true){
-        // setup camera
+        this.input = InputManager.Get();
+        this.clock = new THREE.Clock(true);
         this.camera = new THREE.PerspectiveCamera(35, this.width / this.height, .1, 100);
-        this.camera.position.z = 2;
-        this.camera.position.y = 0;
-        this.camera.position.x = 0;
+        this.camera.position.z = 8;
         this.camera.lookAt(0,0,0);
-        // setup renderer
+
+        this.depthPicker = new DepthPick(this.camera);
+
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById("app") as HTMLCanvasElement,
             alpha: true
         });
+
         this.renderer.setSize(this.width, this.height);
 
-        // add window resizing
         UVDisplacementScene.addWindowResizing(this.camera, this.renderer);
         
         // set the background color
-        this.background = new THREE.Color(0xFFFFFF);
-
+        this.background = new THREE.Color(0xFFFF00);
         const geometry = new THREE.BoxGeometry(1, 1, 1);
-        // Creates the geometry + materials
-        //const geometry = new THREE.SphereGeometry(0.5);
-
-        let self = this;
-        let p = ""
 
         let fireTex = new THREE.TextureLoader().load(FireTex); 
         fireTex.wrapS = THREE.RepeatWrapping;
@@ -93,11 +82,7 @@ export default class UVDisplacementScene extends SceneBase{
                 verticalStrength:{value:3.6},
                 scrollSpeed:{value: new THREE.Vector2(0.4, -1)},
                 displacementUVScale:{value: new THREE.Vector2(5, 2.6)},
-                // ZOffset: {value: -1.0},
-                // tCube: { value: cubemap },
-                // uvScale: {value: new THREE.Vector2(1,1)},
-                // uvOffset: {value: new THREE.Vector2(0,0)}
-                mainTex: {value:fireTex},
+                mainTex: {value:this.paintableTexture.RenderTarget.texture},
                 dispTex: {value:dispTex}
 
             },
@@ -105,169 +90,24 @@ export default class UVDisplacementScene extends SceneBase{
             fragmentShader: FireFragmentShader,
         })
 
-        let cube = new THREE.Mesh(geometry, this.material);
-        //cube.position.y = .5;
-        // add to scene
-        this.add(cube);
-        this.cube = cube;
-        // setup Debugger
-        if (debug) {
-            this.debugger =  new GUI();
-
-            // Add camera to debugger
-            // const cameraGroup = this.debugger.addFolder('Camera');
-            // cameraGroup.add(this.camera, 'fov', 20, 80);
-            // cameraGroup.add(this.camera, 'zoom', 0, 1);
-            // cameraGroup.open();
-
-            const materialSettingsGroup = this.debugger.addFolder("Material Properties");
-            const uvScrollGroup = materialSettingsGroup.addFolder("UV Scroll Speed");
-            uvScrollGroup.add(this.material.uniforms["scrollSpeed"].value, "x");
-            uvScrollGroup.add(this.material.uniforms["scrollSpeed"].value, "y");
-
-            const uvScaleGroup = materialSettingsGroup.addFolder("Flow UV Scale");
-            uvScaleGroup.add(this.material.uniforms["displacementUVScale"].value, "x");
-            uvScaleGroup.add(this.material.uniforms["displacementUVScale"].value, "y");
-
-            materialSettingsGroup.add(this.material.uniforms["displacementStr"],"value").name("Displacement Strength");
-            materialSettingsGroup.add(this.material.uniforms["verticalStrength"],"value").name("Vertical Falloff");
-
-            let mainTexUploader = document.createElement("input")
-            mainTexUploader.type = "file" 
-            mainTexUploader.accept = "image/*"
-            mainTexUploader.style.visibility="hidden";
-
-            let self = this;
-            mainTexUploader.addEventListener("change", (evt)=>{
-                var userImageURL = URL.createObjectURL( mainTexUploader.files[0] );
-                
-                var loader = new THREE.TextureLoader();
-                loader.setCrossOrigin("");
-                fireTex = loader.load(userImageURL);
-                fireTex.wrapS = THREE.RepeatWrapping;
-                fireTex.wrapT = THREE.RepeatWrapping;
-                self.material.uniforms["mainTex"].value = fireTex;
-                self.material.needsUpdate = true;
-
-            })
-
-            let buttonsFuncs = {
-                mainTex:function(){
-                    mainTexUploader.click();
-                }
-            }
-            materialSettingsGroup.add(buttonsFuncs, "mainTex").name("Set main texture")
-
-            // const uvOffsetGroup = materialSettingsGroup.addFolder("UV Offset");
-            // uvOffsetGroup.add(this.material.uniforms["uvOffset"].value, "x");
-            // uvOffsetGroup.add(this.material.uniforms["uvOffset"].value, "y");
-
-
-            // let roomDepthSetting = materialSettingsGroup.add(this.material.uniforms["ZOffset"], "value", -10, 1, 0.01);
-            // roomDepthSetting.name("Depth");
-            // materialSettingsGroup.open();
-            // Add the cube with some properties
-            // const cubeGroup = this.debugger.addFolder("Cube");
-            // cubeGroup.add(cube.position, 'x', -10, 10);
-            // cubeGroup.add(cube.position, 'y', .5, 10);
-            // cubeGroup.add(cube.position, 'z', -10, 10);
-            // cubeGroup.open();
-        }
+        this.cube = new THREE.Mesh(geometry, this.material);
+        this.add(this.cube);
+        
+       
+        this.initStandaloneGUI();
     }
 
-    // initiaze(debug: boolean = true, addGridHelper: boolean = true){
-    //     // setup camera
-    //     this.camera = new THREE.PerspectiveCamera(35, this.width / this.height, .1, 100);
-    //     this.camera.position.z = 4;
-    //     this.camera.position.y = 0;
-    //     this.camera.position.x = 0;
-    //     this.camera.lookAt(0,0.5,0);
-    //     // setup renderer
-    //     this.renderer = new THREE.WebGLRenderer({
-    //         canvas: document.getElementById("app") as HTMLCanvasElement,
-    //         alpha: true
-    //     });
-    //     this.renderer.setSize(this.width, this.height);
+    
 
-    //     // add window resizing
-    //     BasicScene.addWindowResizing(this.camera, this.renderer);
-
-    //     // sets up the camera's orbital controls
-    //     this.orbitals = new OrbitControls(this.camera, this.renderer.domElement)
-
-    //     // Adds an origin-centered grid for visual reference
-    //     if (addGridHelper){
-
-    //         // Adds a grid
-    //         this.add(new THREE.GridHelper(10, 10, 'red'));
-
-    //         // Adds an axis-helper
-    //         this.add(new THREE.AxesHelper(3))
-    //     }
-
-    //     // set the background color
-    //     this.background = new THREE.Color(0x884422);
-
-    //     // Creates the geometry + materials
-    //     const geometry = new THREE.BoxGeometry(1, 1, 1);
-    //     //const geometry = new THREE.SphereGeometry(0.5);
-    //     geometry.computeTangents();
-
-    //     let self = this;
-    //     let p = ""
-
-    //     let cubemap = new THREE.CubeTextureLoader().load([CubeMap_px, CubeMap_nx, CubeMap_py, CubeMap_ny, CubeMap_pz, CubeMap_nz])
-
-       
-    //     this.material = new THREE.ShaderMaterial({
-    //         uniforms:{
-    //             time: {value:1.0},
-    //             ZOffset: {value: -1.0},
-    //             tCube: { value: cubemap },
-    //             uvScale: {value: new THREE.Vector2(1,1)},
-    //             uvOffset: {value: new THREE.Vector2(0,0)}
-    //             //value: new THREE.TextureLoader().load(Img)}
-    //         },
-    //         vertexShader: VertexShader,
-    //         fragmentShader:FragmentShader,
-    //     })
-
-    //     let cube = new THREE.Mesh(geometry, this.material);
-    //     //cube.position.y = .5;
-    //     // add to scene
-    //     this.add(cube);
-    //     this.cube = cube;
-    //     // setup Debugger
-    //     if (debug) {
-    //         this.debugger =  new GUI();
-
-    //         // Add camera to debugger
-    //         const cameraGroup = this.debugger.addFolder('Camera');
-    //         cameraGroup.add(this.camera, 'fov', 20, 80);
-    //         cameraGroup.add(this.camera, 'zoom', 0, 1);
-    //         cameraGroup.open();
-
-    //         const materialSettingsGroup = this.debugger.addFolder("Material Properties");
-    //         const uvScaleGroup = materialSettingsGroup.addFolder("UV Scale");
-    //         uvScaleGroup.add(this.material.uniforms["uvScale"].value, "x");
-    //         uvScaleGroup.add(this.material.uniforms["uvScale"].value, "y");
-
-    //         const uvOffsetGroup = materialSettingsGroup.addFolder("UV Offset");
-    //         uvOffsetGroup.add(this.material.uniforms["uvOffset"].value, "x");
-    //         uvOffsetGroup.add(this.material.uniforms["uvOffset"].value, "y");
-
-
-    //         let roomDepthSetting = materialSettingsGroup.add(this.material.uniforms["ZOffset"], "value", -10, 1, 0.01);
-    //         roomDepthSetting.name("Depth");
-    //         materialSettingsGroup.open();
-    //         // Add the cube with some properties
-    //         // const cubeGroup = this.debugger.addFolder("Cube");
-    //         // cubeGroup.add(cube.position, 'x', -10, 10);
-    //         // cubeGroup.add(cube.position, 'y', .5, 10);
-    //         // cubeGroup.add(cube.position, 'z', -10, 10);
-    //         // cubeGroup.open();
-    //     }
-    // }
+    loadTexture(url:string){
+        var loader = new THREE.TextureLoader();
+        loader.setCrossOrigin("");
+        let fireTex = loader.load(url);
+        fireTex.wrapS = THREE.RepeatWrapping;
+        fireTex.wrapT = THREE.RepeatWrapping;
+        this.material.uniforms["mainTex"].value = fireTex;
+        this.material.needsUpdate = true;
+    }
 
     update(){
         this.camera.updateProjectionMatrix();
@@ -279,10 +119,29 @@ export default class UVDisplacementScene extends SceneBase{
             this.material.needsUpdate = true;
         }
 
-        if(this.cube){
-            // this.cube.translateX(0.1)
-            //this.cube.rotateY(0.01);
+        this.input.pointers.forEach((value,key)=>{ 
+            if(value.isDown){
+                this.Paint(value);
+            }
+        }) 
+    }
+
+    Paint(pointerInfo:Pointer){
+        //let pos = this.scenePicker(this, this.camera, cursorPostion);
+        if (!pointerInfo) {
+            return;
         }
+
+        let depth = this.depthPicker.pick(pointerInfo.cssPosition, this, this.renderer, this.camera);
+        if(depth >= (this.camera.far - (this.camera.far * 0.001)))
+        {
+            //Probably casting against the skybox
+            return;
+        }
+
+        let remappedDepth = (depth*2)-1.0;
+        let pos = new THREE.Vector3(pointerInfo.position.x, pointerInfo.position.y,remappedDepth).unproject(this.camera);
+        this.paintableTexture.Paint(this.renderer,this.camera, this.cube, pos);
     }
 
     /**
@@ -300,5 +159,43 @@ export default class UVDisplacementScene extends SceneBase{
             camera.updateProjectionMatrix();
             renderer.setSize( window.innerWidth, window.innerHeight );
         }
+    }
+
+
+
+    initStandaloneGUI(){
+        this.debugger =  new GUI();
+
+        const materialSettingsGroup = this.debugger.addFolder("Material Properties");
+        const uvScrollGroup = materialSettingsGroup.addFolder("UV Scroll Speed");
+        uvScrollGroup.add(this.material.uniforms["scrollSpeed"].value, "x");
+        uvScrollGroup.add(this.material.uniforms["scrollSpeed"].value, "y");
+
+        const uvScaleGroup = materialSettingsGroup.addFolder("Flow UV Scale");
+        uvScaleGroup.add(this.material.uniforms["displacementUVScale"].value, "x");
+        uvScaleGroup.add(this.material.uniforms["displacementUVScale"].value, "y");
+
+        materialSettingsGroup.add(this.material.uniforms["displacementStr"],"value").name("Displacement Strength");
+        materialSettingsGroup.add(this.material.uniforms["verticalStrength"],"value").name("Vertical Falloff");
+
+        let mainTexUploader = document.createElement("input")
+        mainTexUploader.type = "file" 
+        mainTexUploader.accept = "image/*"
+        mainTexUploader.style.visibility="hidden";
+
+        let self = this;
+        mainTexUploader.addEventListener("change", (evt)=>{
+            var userImageURL = URL.createObjectURL( mainTexUploader.files[0] );
+            
+            self.loadTexture(userImageURL);
+            
+        })
+
+        let buttonsFuncs = {
+            mainTex:function(){
+                mainTexUploader.click();
+            }
+        }
+        materialSettingsGroup.add(buttonsFuncs, "mainTex").name("Set main texture")
     }
 }
