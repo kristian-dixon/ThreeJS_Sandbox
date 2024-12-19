@@ -391,9 +391,7 @@ export default class WhiteboardDemoScene extends SceneBase {
         this.camera.translateZ(8);
         this.camera.updateProjectionMatrix();
 
-        this.input.pointers.forEach((value,key)=>{
-            this.gui.updateDisplay();
-        
+        this.input.pointers.forEach((value,key)=>{ 
             if(value.isDown){
                 this.Paint(value);
             }
