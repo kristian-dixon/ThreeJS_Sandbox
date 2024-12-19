@@ -74,7 +74,7 @@ export default class WhiteboardDemoScene extends SceneBase {
     private initStandaloneUI()
     {
         if(window.self != window.top){
-            //return;
+            return;
         }
 
         this.gui = new GUI(
@@ -364,6 +364,10 @@ export default class WhiteboardDemoScene extends SceneBase {
 
     setBrushColour(colour:string){
         this.paintableTexture.SetColor(colour);
+    }
+
+    setBrushStrength(strength:number){
+        this.paintableTexture.SetBlendStrength(strength);
     }
 
     setBrushRadius(radius:number){
