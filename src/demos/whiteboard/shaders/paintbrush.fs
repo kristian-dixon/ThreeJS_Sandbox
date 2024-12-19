@@ -2,10 +2,14 @@ varying vec2 vUv;
 varying vec4 vWorldPos;
 
 uniform vec3 brushPos;
+uniform vec3 color;
 
+uniform float blendStrength;
+uniform float brushRadius;
+uniform float brushFalloff;
 
 void main()	{
-    float dist = smoothstep(0.2,0.0,length(vWorldPos.xyz-brushPos)) * 0.01;
-    gl_FragColor = vec4(dist,0,1,1);
+    float dist = step(length(vWorldPos.xyz-brushPos),brushRadius);//smoothstep(0.1,0.090,length(vWorldPos.xyz-brushPos)) ;
+    gl_FragColor = vec4(color,dist*blendStrength);
     return;
 }

@@ -19,7 +19,7 @@ vec3 ParralaxMap(){
 
     //Get how much along each axis we need to travel along the view direction to intersect with
     //an axis aligned voxel grid.
-    vec3 invDir = 1.0/ vViewDir;
+    vec3 invDir = 1.0 / vViewDir;
     vec3 viewSign = sign(invDir);
 
     //Figure out where we actually are in this voxel grid based on the resolved position

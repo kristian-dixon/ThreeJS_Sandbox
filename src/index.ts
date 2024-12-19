@@ -16,7 +16,7 @@ const urlParams = new URLSearchParams(window.location.search);
 let demo = urlParams.get("demo");
 if(!demo)
 {
-    demo = "whiteboard";
+    demo = "uv_displacement";
 }
 
 scene = new availableScenes[demo]();

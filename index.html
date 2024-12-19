@@ -2,20 +2,21 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
         <title>ThreeJS Sandbox</title>
 
         <!-- loads some basic CSS resets and Styles -->
         <style>
-            html, body, canvas {margin: 0;padding: 0;border: 0;}
+            html, body, canvas {margin: 0;padding: 0;border: 0;overflow: hidden;}
             canvas {display: block;}
         </style>
     </head>
     <body style="cursor : pointer;">
 
     <!-- Application Canvas -->
-    <canvas id="app" style="width:100%;height:100%;"></canvas>
+    <canvas id="app" style="width:100%;height:100%;touch-action: none;"></canvas>
 
     <!-- this needs to be called here to ensure all elements are available -->
-    <script src="dist/main.js" type="application/javascript"></script>
+
     </body>
 </html>
