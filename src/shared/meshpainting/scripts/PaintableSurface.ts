@@ -3,6 +3,20 @@ import * as THREE from 'three';
 import PaintShaderVert from "../../../demos/whiteboard/shaders/paintbrush.vs"
 import PaintShaderFrag from "../../../demos/whiteboard/shaders/paintbrush.fs"
 
+
+export interface PaintableTextureOptions{
+    BrushSettings?:{
+        brushPos?: {value: THREE.Vector3},
+        color?: {value: THREE.Color},
+        blendStrength?: {value: number},
+        brushRadius?: {value:number},
+        brushFalloff?: {value:number},
+        jitter?: {value: THREE.Vector2}
+    }
+
+    fragmentShader?: string;
+}
+
 export class PaintableTexture
 {
     RenderTarget: THREE.WebGLRenderTarget;
@@ -11,6 +25,8 @@ export class PaintableTexture
 
     blitMaterial: THREE.Material;
     quad: THREE.Mesh;
+
+
 
     Settings = {
         brushPos: {value: new THREE.Vector3(0,0,0)},
@@ -21,17 +37,20 @@ export class PaintableTexture
         jitter: {value:new THREE.Vector2(0,0)}
     }
 
-    constructor(rtWidth:number, rtHeight: number){
+    constructor(rtWidth:number, rtHeight: number, options?:PaintableTextureOptions){
+        if(options){
+            this.Settings = {...this.Settings, ...options.BrushSettings}
+        }
+       
         this.RenderTarget = new THREE.WebGLRenderTarget(rtWidth, rtHeight);
+        
         this.RenderTarget.texture.generateMipmaps = false;
-        //this.renderTarget.texture.magFilter = THREE.NearestFilter;
-        //this.renderTarget.texture.minFilter = THREE.NearestFilter;
         this.RenderTarget.samples = 1;
 
         this.PaintMaterial = new THREE.ShaderMaterial({
             uniforms:this.Settings,
             vertexShader: PaintShaderVert,
-            fragmentShader: PaintShaderFrag,
+            fragmentShader: !!options?.fragmentShader ? options.fragmentShader : PaintShaderFrag,
             depthTest: false,
             depthWrite: false,
             side:THREE.DoubleSide,
@@ -146,8 +165,6 @@ export class PaintableTexture
     dirty = false;
     Import(renderer:THREE.WebGLRenderer, camera:THREE.Camera, texture: THREE.Texture){     
         (this.blitMaterial as THREE.ShaderMaterial).uniforms.uMap.value = texture;
-        // (this.blitMaterial as THREE.ShaderMaterial).needsUpdate = true;//.uMap.value = texture;
-        // (this.blitMaterial as THREE.ShaderMaterial).uniformsNeedUpdate = true;    
         this.dirty = true;
         setTimeout(()=>{this.dirty = false}, 100);
     }
