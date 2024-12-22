@@ -30,6 +30,7 @@ export default class LowResScene extends SceneBase{
     height = window.innerHeight;
 
     sceneRenderTarget: THREE.WebGLRenderTarget;
+    copyRenderTarget: THREE.WebGLRenderTarget;
 
     blitQuad: THREE.Mesh;
     wsQuad: THREE.Mesh;
@@ -60,7 +61,8 @@ export default class LowResScene extends SceneBase{
         this.orbitals = new OrbitControls(this.camera, this.renderer.domElement)
 
         this.sceneRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height);
-        LowResScene.addWindowResizing(this.camera, this.renderer, this.sceneRenderTarget);
+        this.copyRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height);
+        this.addWindowResizing();
         
         // set the background color
         this.background = new THREE.Color(0x9f88);
@@ -134,8 +136,9 @@ export default class LowResScene extends SceneBase{
                 void main() {
                 
                     float res = 64.0;
-                    vec2 aspectCorrectedUv = vec2(screenUv.x, screenUv.y/aspect);
-                    vec2 steppedUv = floor(screenUv * res)/res;
+                    vec2 aspectCorrectedUv = vec2(screenUv.x, screenUv.y);
+                    vec2 steppedUv = floor(aspectCorrectedUv * vec2(res * aspect, res))/vec2(res * aspect,res);
+                    //vec2 steppedUv = floor(screenUv * res)/res;
 
                     gl_FragColor = texture2D(map, steppedUv) + vec4(0.01,0.01,0.01,0);
                     //gl_FragColor = vec4(steppedUv, 0.0, 1.0) ; 
@@ -144,16 +147,14 @@ export default class LowResScene extends SceneBase{
 
             uniforms:
             {
-                map: {value: this.sceneRenderTarget.texture},
+                map: {value: this.copyRenderTarget.texture},
                 aspect: {value: this.camera.aspect}
             }
         }))
 
         this.wsQuad.scale.set(1,1,1);
         this.wsQuad.position.set(0,0.65,1);
-
-        //this.add(this.wsQuad);
-
+        console.log(this.camera.aspect);
         this.initStandaloneGUI();
     }
 
@@ -164,34 +165,39 @@ export default class LowResScene extends SceneBase{
         this.orbitals.update();
         this.camera.updateProjectionMatrix();
 
+        this.renderer.autoClear = false;
         this.renderer.setRenderTarget(this.sceneRenderTarget);
         this.renderer.render(this, this.camera);
 
-        this.renderer.setRenderTarget(null);
-        this.renderer.autoClear = false;
+        this.renderer.setRenderTarget(this.copyRenderTarget);
         this.renderer.render(this.blitQuad, this.camera);
+
+        this.renderer.setRenderTarget(this.sceneRenderTarget);
         this.renderer.render(this.wsQuad, this.camera);
-        this.renderer.autoClear = false;
+
+        this.renderer.setRenderTarget(null);
+        this.renderer.render(this.blitQuad, this.camera);
+
+        this.renderer.autoClear = true;
     }
 
-    /**
-     * Given a ThreeJS camera and renderer, resizes the scene if the
-     * browser window is resized.
-     * @param camera - a ThreeJS PerspectiveCamera object.
-     * @param renderer - a subclass of a ThreeJS Renderer object.
-     */
-    static addWindowResizing(camera: THREE.PerspectiveCamera, renderer: THREE.Renderer, renderTarget: THREE.WebGLRenderTarget
-    ){
+    addWindowResizing()
+    {
+        let self = this;
         window.addEventListener( 'resize', onWindowResize, false );
         function onWindowResize(){
 
             // uses the global window widths and height
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize( window.innerWidth, window.innerHeight );
+            self.camera.aspect = window.innerWidth / window.innerHeight;
+            self.camera.updateProjectionMatrix();
+            self.renderer.setSize( window.innerWidth, window.innerHeight );
 
-            renderTarget.width = window.innerWidth;
-            renderTarget.height = window.innerHeight;
+            self.sceneRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
+            self.copyRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
+
+            self.blitQuad.material["uniforms"].map.value = self.sceneRenderTarget.texture;
+            self.wsQuad.material["uniforms"].map.value = self.copyRenderTarget.texture;
+            self.wsQuad.material["uniforms"].aspect.value = self.camera.aspect;
         }
     }
 
