@@ -4,7 +4,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 import SceneBase from '../../../SceneBase';
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 
-import model from "../../whiteboard/models/chunkysmooth.glb"
+import model from "../../whiteboard/models/Fox.glb"
 
 /**
  * A class to set up some basic scene elements to minimize code in the
@@ -79,7 +79,7 @@ export default class LowResScene extends SceneBase{
             center = center.multiplyScalar(-scale);
             gltf.scene.position.copy(center);
             gltf.scene.scale.set(scale,scale,scale);
-            
+            gltf.scene.rotateY(Math.PI / 2.0)
             this.add(gltf.scene);
         });
      
@@ -152,8 +152,8 @@ export default class LowResScene extends SceneBase{
             }
         }))
 
-        this.wsQuad.scale.set(1,1,1);
-        this.wsQuad.position.set(0,0.65,1);
+        this.wsQuad.scale.set(2,2,1);
+        this.wsQuad.position.set(0,0.25,2);
         console.log(this.camera.aspect);
         this.initStandaloneGUI();
     }
