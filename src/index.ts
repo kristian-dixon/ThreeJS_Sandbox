@@ -1,5 +1,6 @@
 
 import InteriorMappingScene from "./demos/interior_mapping/src/interiormappingdemo";
+import LowResScene from "./demos/low_res_filter/src/lowresfilter";
 import UVDisplacementScene from "./demos/uv_displacement/src/UV_Displacement";
 import WhiteboardDemoScene from "./demos/whiteboard/src/whiteboarddemo";
 import SceneBase from "./SceneBase";
@@ -7,7 +8,8 @@ import SceneBase from "./SceneBase";
 let availableScenes = {
     uv_displacement:UVDisplacementScene,
     interior_mapping:InteriorMappingScene,
-    whiteboard:WhiteboardDemoScene
+    whiteboard:WhiteboardDemoScene,
+    lowresfilter:LowResScene
 }
 
 let scene: SceneBase = null;
@@ -16,7 +18,7 @@ const urlParams = new URLSearchParams(window.location.search);
 let demo = urlParams.get("demo");
 if(!demo)
 {
-    demo = "uv_displacement";
+    demo = "lowresfilter";
 }
 
 scene = new availableScenes[demo]();
