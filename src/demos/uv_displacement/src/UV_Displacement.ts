@@ -12,7 +12,9 @@ import SceneBase from '../../../SceneBase';
 import { PaintableTexture } from '../../../shared/meshpainting/scripts/PaintableSurface';
 import { DepthPick } from '../../../shared/picking/depthpick';
 import { InputManager, Pointer } from '../../../shared/input/InputManager';
-
+import WhiteTex from "../../../shared/textures/white.png"
+import PaintinCanvasTex from "../textures/PaintingCanvas.png"
+import { info } from 'console';
 /**
  * A class to set up some basic scene elements to minimize code in the
  * main execution file.
@@ -36,8 +38,7 @@ export default class UVDisplacementScene extends SceneBase{
     width = window.innerWidth;
     height = window.innerHeight;
 
-    cube: THREE.Mesh;
-
+    heroModel: THREE.Mesh;
     clock:THREE.Clock;
 
     paintableTexture: PaintableTexture = new PaintableTexture(512,512, {BrushSettings:{brushRadius:{value:0.025}, blendStrength:{value:1}}});
@@ -45,7 +46,14 @@ export default class UVDisplacementScene extends SceneBase{
 
     input:InputManager;
 
+    fireTexture:THREE.Texture;
+    whiteTexture:THREE.Texture;
+    paintCanvasModel:THREE.Mesh;
+
+    allowPaintOnHero: boolean = false;
+
     initialize(debug: boolean = true, addGridHelper: boolean = true){
+        window["scene"] = this;
         this.input = InputManager.Get();
         this.clock = new THREE.Clock(true);
         this.camera = new THREE.PerspectiveCamera(35, this.width / this.height, .1, 100);
@@ -58,6 +66,7 @@ export default class UVDisplacementScene extends SceneBase{
             canvas: document.getElementById("app") as HTMLCanvasElement,
             alpha: true
         });
+        
 
         this.renderer.setSize(this.width, this.height);
 
@@ -65,12 +74,13 @@ export default class UVDisplacementScene extends SceneBase{
         
         // set the background color
         this.background = new THREE.Color(0xFFFF00);
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const geometry = new THREE.PlaneGeometry();
 
-        let fireTex = new THREE.TextureLoader().load(FireTex); 
-        fireTex.wrapS = THREE.RepeatWrapping;
-        fireTex.wrapT = THREE.RepeatWrapping;
-      
+        this.fireTexture = new THREE.TextureLoader().load(FireTex); 
+        this.fireTexture.wrapS = THREE.RepeatWrapping;
+        this.fireTexture.wrapT = THREE.RepeatWrapping;
+
+        this.whiteTexture = new THREE.TextureLoader().load(WhiteTex);
 
         let dispTex = new THREE.TextureLoader().load(FlowTex);
         dispTex.wrapS = THREE.RepeatWrapping;
@@ -91,15 +101,35 @@ export default class UVDisplacementScene extends SceneBase{
             fragmentShader: FireFragmentShader,
         })
 
-        this.cube = new THREE.Mesh(geometry, this.material);
-        this.add(this.cube);
+        this.heroModel = new THREE.Mesh(geometry, this.material);
+        this.heroModel.position.set(-0.55,0,0);
+        this.add(this.heroModel);
         
-        this.paintableTexture.Import(fireTex);
-        this.paintableTexture.Paint(this.renderer,this.camera,this.cube,new THREE.Vector3(0,10000,0));
+        this.paintCanvasModel = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+            map:this.paintableTexture.RenderTarget.texture
+        }))
+
+        console.log(this.paintCanvasModel.material);
+        this.paintCanvasModel.position.set(0.55,0,0);
+        this.add(this.paintCanvasModel);
+
+        let infoText = new THREE.TextureLoader().load(PaintinCanvasTex);
+        let infoCanvas = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+            map: infoText,
+            transparent: true
+        }))
+        this.add(infoCanvas );
+        infoCanvas.position.set(0.55, 0.55, 0);
+        infoCanvas.scale.set(0.5,0.1,1.0);
+
+        this.paintableTexture.Import(this.fireTexture);
+        this.paintableTexture.Paint(this.renderer,this.camera,this.heroModel,new THREE.Vector3(0,10000,0));
+
+
+
         this.initStandaloneGUI();
     }
 
-    
 
     loadTexture(url:string){
         var loader = new THREE.TextureLoader();
@@ -107,8 +137,18 @@ export default class UVDisplacementScene extends SceneBase{
         let fireTex = loader.load(url);
         fireTex.wrapS = THREE.RepeatWrapping;
         fireTex.wrapT = THREE.RepeatWrapping;
-        this.material.uniforms["mainTex"].value = fireTex;
-        this.material.needsUpdate = true;
+        this.paintableTexture.Import(fireTex);
+    }
+
+    restoreOriginalFireTexture(){
+        this.paintableTexture.Import(this.fireTexture);
+        this.paintableTexture.Paint(this.renderer,this.camera,this.heroModel,new THREE.Vector3(0,10000,0));
+    }
+
+    setFireTextureToWhite()
+    {
+        this.paintableTexture.Import(this.whiteTexture);
+        this.paintableTexture.Paint(this.renderer,this.camera,this.heroModel,new THREE.Vector3(0,10000,0));
     }
 
     update(){
@@ -117,7 +157,7 @@ export default class UVDisplacementScene extends SceneBase{
         this.renderer.render(this, this.camera);
         
         if(this.paintableTexture.dirty){
-            this.paintableTexture.Paint(this.renderer,this.camera,this.cube,new THREE.Vector3(0,10000,0));
+            this.paintableTexture.Paint(this.renderer,this.camera,this.paintCanvasModel,new THREE.Vector3(0,10000,0));
         }
 
         if(this.material){
@@ -147,7 +187,13 @@ export default class UVDisplacementScene extends SceneBase{
 
         let remappedDepth = (depth*2)-1.0;
         let pos = new THREE.Vector3(pointerInfo.position.x, pointerInfo.position.y,remappedDepth).unproject(this.camera);
-        this.paintableTexture.Paint(this.renderer,this.camera, this.cube, pos);
+
+        if(this.allowPaintOnHero){
+            this.paintableTexture.Paint(this.renderer,this.camera,this,pos)
+        }
+        else{
+            this.paintableTexture.Paint(this.renderer,this.camera, this.paintCanvasModel, pos);
+        }
     }
 
     /**
