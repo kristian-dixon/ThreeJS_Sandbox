@@ -150,7 +150,7 @@ export default class LowResScene extends SceneBase{
         }))
 
         this.wsQuad.scale.set(1,1,1);
-        this.wsQuad.position.set(0,0.5,1);
+        this.wsQuad.position.set(0,0.65,1);
 
         //this.add(this.wsQuad);
 
