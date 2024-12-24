@@ -65,7 +65,7 @@ export default class LowResScene extends SceneBase{
         this.addWindowResizing();
         
         // set the background color
-        this.background = new THREE.Color(0x9f88);
+        //this.background = new THREE.Color(0x9f88);
         const geometry = new THREE.PlaneGeometry();
  
         //Load demo model
@@ -153,7 +153,7 @@ export default class LowResScene extends SceneBase{
         }))
 
         this.wsQuad.scale.set(2,2,1);
-        this.wsQuad.position.set(0,0.25,2);
+        this.wsQuad.position.set(0,0,2);
         console.log(this.camera.aspect);
         this.initStandaloneGUI();
     }
@@ -165,9 +165,12 @@ export default class LowResScene extends SceneBase{
         this.orbitals.update();
         this.camera.updateProjectionMatrix();
 
-        this.renderer.autoClear = false;
+        
         this.renderer.setRenderTarget(this.sceneRenderTarget);
         this.renderer.render(this, this.camera);
+
+        this.renderer.autoClear = false;
+
 
         this.renderer.setRenderTarget(this.copyRenderTarget);
         this.renderer.render(this.blitQuad, this.camera);
@@ -202,6 +205,6 @@ export default class LowResScene extends SceneBase{
     }
 
     initStandaloneGUI(){
-        this.gui = new GUI();      
+        //this.gui = new GUI();      
     }
 }
