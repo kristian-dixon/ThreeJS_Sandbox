@@ -28,7 +28,7 @@ void main()	{
     vec2 uvScrolled = (vUv * displacementUVScale) + scrollSpeed * Time;
     vec2 disp = texture2D(dispTex, uvScrolled).xy;
 
-    disp = -(disp * 2.0 - 1.0) * displacementStr * pow(vUv.y,verticalStrength);
+    disp = -((disp * 2.0) - 1.0) * displacementStr * pow(vUv.y + 0.001,verticalStrength);
 
     vec4 color = texture2D(mainTex, vUv + disp);
    

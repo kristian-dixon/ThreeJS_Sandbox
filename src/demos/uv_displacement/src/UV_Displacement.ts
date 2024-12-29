@@ -94,7 +94,8 @@ export default class UVDisplacementScene extends SceneBase{
         UVDisplacementScene.addWindowResizing(this.camera, this.renderer);
         
         // set the background color
-        this.background = new THREE.Color(0x000000);
+        //this.background = new THREE.Color(0x00000000);
+        this.renderer.setClearColor(new THREE.Color(0,0,0));
         const geometry = new THREE.PlaneGeometry();
 
         this.fireTexture = new THREE.TextureLoader().load(FireTex); 
@@ -141,7 +142,7 @@ export default class UVDisplacementScene extends SceneBase{
 
         this.heroModel = new THREE.Mesh(geometry, this.material);
         this.heroModel.position.set(-0.55,0,0);
-        this.add(this.heroModel);
+        //this.add(this.heroModel);
         
         this.albedoPaintCanvasModel = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
             map:this.albedoPaintTexture.RenderTarget.texture
@@ -189,13 +190,22 @@ export default class UVDisplacementScene extends SceneBase{
             }
         })
 
+        let heroScene = new THREE.Scene();
+        heroScene.add(this.heroModel);
+
         this.initStandaloneGUI();
         this.effectComposer = new EffectComposer(this.renderer);
         
-        this.effectComposer.addPass(new RenderPass(this, this.camera));
+        let renderPass = new RenderPass(heroScene, this.camera);
+        this.effectComposer.addPass(renderPass);
 
+        let renderPass2 = new RenderPass(this, this.camera);
+        renderPass2.clear = false;
+        
         this.bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 0.075, 0.1, 0.1 );
+        
         this.effectComposer.addPass(this.bloomPass);
+        this.effectComposer.addPass(renderPass2);
 
         this.effectComposer.addPass(new OutputPass())
     }
@@ -225,9 +235,15 @@ export default class UVDisplacementScene extends SceneBase{
         let dt = this.clock.getDelta();
         this.camera.updateProjectionMatrix();
 
+        this.renderer.setClearColor(new THREE.Color(0.0,0.0,0.0));
+
+        if(window.self != window.top)
+            this.renderer.setClearAlpha(0);
+        
         this.effectComposer.setSize(window.innerWidth, window.innerHeight);
         this.effectComposer.render(dt);
-        //this.renderer.render(this, this.camera);
+        this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.0));
+      
         
         if(this.albedoPaintTexture.dirty){
             this.albedoPaintTexture.Paint(this.renderer,this.camera,this.albedoPaintCanvasModel,new THREE.Vector3(0,10000,0));
@@ -247,11 +263,11 @@ export default class UVDisplacementScene extends SceneBase{
         this.blitter.blit(this.flowPaintTexture.RenderTarget.texture, this.flowWriteTexture, this.renderer, this.camera, this.additiveCopyMaterial);
         this.blitter.blit(this.flowWriteTexture.texture, this.flowReadTexture, this.renderer, this.camera)
 
-        this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.0));
+        //this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.0));
         this.renderer.setRenderTarget(this.flowWriteTexture);
         this.renderer.clear();
 
-        this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.0));
+        //this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.0));
         this.renderer.setRenderTarget(this.flowPaintTexture.RenderTarget)
         this.renderer.clear();
         
