@@ -18,7 +18,7 @@ const urlParams = new URLSearchParams(window.location.search);
 let demo = urlParams.get("demo");
 if(!demo)
 {
-    demo = "lowresfilter";
+    demo = "uv_displacement";
 }
 
 scene = new availableScenes[demo]();

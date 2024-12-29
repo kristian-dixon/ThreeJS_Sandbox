@@ -1,4 +1,11 @@
 import * as THREE from 'three';
+import {EffectComposer} from 'three/examples/jsm/postprocessing/EffectComposer'
+import {UnrealBloomPass} from 'three/examples/jsm/postprocessing/UnrealBloomPass'
+import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass'
+import {OutputPass} from 'three/examples/jsm/postprocessing/OutputPass'
+
+
+
 import {GUI} from 'dat.gui';
 
 
@@ -6,20 +13,26 @@ import FireVertexShader from "../shaders/fire.vs"
 import FireFragmentShader from "../shaders/fire.fs";
 
 
-import FireTex from "../textures/fire.png"
+import FireTex from "../textures/fire2.png"
 import FlowTex from "../textures/flowmap.png"
 import SceneBase from '../../../SceneBase';
 import { PaintableTexture } from '../../../shared/meshpainting/scripts/PaintableSurface';
 import { DepthPick } from '../../../shared/picking/depthpick';
 import { InputManager, Pointer } from '../../../shared/input/InputManager';
 import WhiteTex from "../../../shared/textures/white.png"
-import PaintinCanvasTex from "../textures/PaintingCanvas.png"
-import { info } from 'console';
+
+
+import VectorPaintShader from "../shaders/vectorpaint.fs";
+import { Blitter } from '../../../shared/blitter/blit';
+
+import DefaultVSBlit from "../../../shared/blitter/shaders/blit.vs";
+
 /**
  * A class to set up some basic scene elements to minimize code in the
  * main execution file.
  */
 export default class UVDisplacementScene extends SceneBase{
+    
    
     recieveMessage(call: string, args: any) {
         throw new Error('Method not implemented.');
@@ -41,16 +54,26 @@ export default class UVDisplacementScene extends SceneBase{
     heroModel: THREE.Mesh;
     clock:THREE.Clock;
 
-    paintableTexture: PaintableTexture = new PaintableTexture(512,512, {BrushSettings:{brushRadius:{value:0.025}, blendStrength:{value:1}}});
+    albedoPaintTexture: PaintableTexture = new PaintableTexture(512,512, {BrushSettings:{brushRadius:{value:0.025}, blendStrength:{value:1}}});
+    flowPaintTexture: PaintableTexture = new PaintableTexture(512,512, {BrushSettings:{brushRadius:{value:0.1}, blendStrength:{value:0.1}}, fragmentShader:VectorPaintShader});
+
     depthPicker: DepthPick;
 
     input:InputManager;
 
     fireTexture:THREE.Texture;
     whiteTexture:THREE.Texture;
-    paintCanvasModel:THREE.Mesh;
+    albedoPaintCanvasModel:THREE.Mesh;
+    flowPaintCanvasModel:THREE.Mesh;
 
     allowPaintOnHero: boolean = false;
+
+    flowReadTexture: THREE.WebGLRenderTarget;
+    flowWriteTexture: THREE.WebGLRenderTarget;
+
+    blitter: Blitter = new Blitter();
+
+    additiveCopyMaterial: THREE.ShaderMaterial;
 
     initialize(debug: boolean = true, addGridHelper: boolean = true){
         window["scene"] = this;
@@ -67,13 +90,11 @@ export default class UVDisplacementScene extends SceneBase{
             alpha: true
         });
         
-
         this.renderer.setSize(this.width, this.height);
-
         UVDisplacementScene.addWindowResizing(this.camera, this.renderer);
         
         // set the background color
-        this.background = new THREE.Color(0xFFFF00);
+        this.background = new THREE.Color(0x000000);
         const geometry = new THREE.PlaneGeometry();
 
         this.fireTexture = new THREE.TextureLoader().load(FireTex); 
@@ -81,6 +102,22 @@ export default class UVDisplacementScene extends SceneBase{
         this.fireTexture.wrapT = THREE.RepeatWrapping;
 
         this.whiteTexture = new THREE.TextureLoader().load(WhiteTex);
+
+        this.flowWriteTexture = new THREE.WebGLRenderTarget(512,512);
+        this.flowWriteTexture.texture.wrapS = this.flowWriteTexture.texture.wrapT = THREE.RepeatWrapping;
+
+        this.flowReadTexture = new THREE.WebGLRenderTarget(512,512);
+        this.flowReadTexture.texture.wrapS = this.flowReadTexture.texture.wrapT = THREE.RepeatWrapping;
+
+        this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.0));
+        this.renderer.setRenderTarget(this.flowPaintTexture.RenderTarget);
+        this.renderer.clear();
+        this.renderer.setRenderTarget(this.flowWriteTexture);
+        this.renderer.clear();
+        this.renderer.setRenderTarget(this.flowReadTexture);
+        this.renderer.clear();
+        
+        this.renderer.setRenderTarget(null);
 
         let dispTex = new THREE.TextureLoader().load(FlowTex);
         dispTex.wrapS = THREE.RepeatWrapping;
@@ -93,71 +130,107 @@ export default class UVDisplacementScene extends SceneBase{
                 verticalStrength:{value:3.6},
                 scrollSpeed:{value: new THREE.Vector2(0.4, -1)},
                 displacementUVScale:{value: new THREE.Vector2(5, 2.6)},
-                mainTex: {value:this.paintableTexture.RenderTarget.texture},
-                dispTex: {value:dispTex}
-
+                mainTex: {value:this.fireTexture},
+                //dispTex: {value:this.flowReadTexture.texture},
+                dispTex: {value:dispTex},
             },
             vertexShader: FireVertexShader,
             fragmentShader: FireFragmentShader,
+            transparent:true
         })
 
         this.heroModel = new THREE.Mesh(geometry, this.material);
         this.heroModel.position.set(-0.55,0,0);
         this.add(this.heroModel);
         
-        this.paintCanvasModel = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
-            map:this.paintableTexture.RenderTarget.texture
+        this.albedoPaintCanvasModel = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+            map:this.albedoPaintTexture.RenderTarget.texture
         }))
 
-        console.log(this.paintCanvasModel.material);
-        this.paintCanvasModel.position.set(0.55,0,0);
-        this.add(this.paintCanvasModel);
+        this.albedoPaintCanvasModel.position.set(0.55,0,0);
+        this.add(this.albedoPaintCanvasModel); 
+        
+        this.flowPaintCanvasModel = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+            //map:this.flowPaintTexture.RenderTarget.texture
+            map:this.flowReadTexture.texture
+        }));
+        this.flowPaintCanvasModel.position.set(1.6,0,0);
+        this.add(this.flowPaintCanvasModel);
 
-        let infoText = new THREE.TextureLoader().load(PaintinCanvasTex);
-        let infoCanvas = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
-            map: infoText,
-            transparent: true
-        }))
-        this.add(infoCanvas );
-        infoCanvas.position.set(0.55, 0.55, 0);
-        infoCanvas.scale.set(0.5,0.1,1.0);
+        this.albedoPaintTexture.Import(this.fireTexture);
+        this.albedoPaintTexture.Paint(this.renderer,this.camera,this.heroModel,new THREE.Vector3(0,10000,0));
 
-        this.paintableTexture.Import(this.fireTexture);
-        this.paintableTexture.Paint(this.renderer,this.camera,this.heroModel,new THREE.Vector3(0,10000,0));
+        //this.flowPaintTexture.Import(dispTex);
+        //this.flowPaintTexture.Paint(this.renderer,this.camera,this.heroModel,new THREE.Vector3(0,10000,0));
 
+        this.additiveCopyMaterial = new THREE.ShaderMaterial({
+            vertexShader:DefaultVSBlit,
+            fragmentShader:
+            `
+                varying vec2 vUv;
+                uniform sampler2D map;
+                uniform sampler2D currentState;
 
+                void main()	{
+                    vec4 current = texture2D(currentState, vUv);
+                    vec2 brushVal = texture2D(map, vUv).xy;
+                    brushVal = (brushVal * 2.0) - 1.0;
+                    
+                    current.xy += brushVal * 0.1;
+                    current.a = 1.0;
+                    gl_FragColor = current;
+                    return;
+                }
+            `,
+
+            uniforms:{
+                currentState:{value:this.flowReadTexture.texture},
+                map:{value:null}
+            }
+        })
 
         this.initStandaloneGUI();
+        this.effectComposer = new EffectComposer(this.renderer);
+        
+        this.effectComposer.addPass(new RenderPass(this, this.camera));
+
+        this.bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 0.075, 0.1, 0.1 );
+        this.effectComposer.addPass(this.bloomPass);
+
+        this.effectComposer.addPass(new OutputPass())
     }
-
-
+    effectComposer: EffectComposer;
+    bloomPass: UnrealBloomPass;
     loadTexture(url:string){
         var loader = new THREE.TextureLoader();
         loader.setCrossOrigin("");
         let fireTex = loader.load(url);
         fireTex.wrapS = THREE.RepeatWrapping;
         fireTex.wrapT = THREE.RepeatWrapping;
-        this.paintableTexture.Import(fireTex);
+        this.albedoPaintTexture.Import(fireTex);
     }
 
     restoreOriginalFireTexture(){
-        this.paintableTexture.Import(this.fireTexture);
-        this.paintableTexture.Paint(this.renderer,this.camera,this.heroModel,new THREE.Vector3(0,10000,0));
+        this.albedoPaintTexture.Import(this.fireTexture);
+        this.albedoPaintTexture.Paint(this.renderer,this.camera,this.heroModel,new THREE.Vector3(0,10000,0));
     }
 
     setFireTextureToWhite()
     {
-        this.paintableTexture.Import(this.whiteTexture);
-        this.paintableTexture.Paint(this.renderer,this.camera,this.heroModel,new THREE.Vector3(0,10000,0));
+        this.albedoPaintTexture.Import(this.whiteTexture);
+        this.albedoPaintTexture.Paint(this.renderer,this.camera,this.heroModel,new THREE.Vector3(0,10000,0));
     }
 
     update(){
         let dt = this.clock.getDelta();
         this.camera.updateProjectionMatrix();
-        this.renderer.render(this, this.camera);
+
+        this.effectComposer.setSize(window.innerWidth, window.innerHeight);
+        this.effectComposer.render(dt);
+        //this.renderer.render(this, this.camera);
         
-        if(this.paintableTexture.dirty){
-            this.paintableTexture.Paint(this.renderer,this.camera,this.paintCanvasModel,new THREE.Vector3(0,10000,0));
+        if(this.albedoPaintTexture.dirty){
+            this.albedoPaintTexture.Paint(this.renderer,this.camera,this.albedoPaintCanvasModel,new THREE.Vector3(0,10000,0));
         }
 
         if(this.material){
@@ -169,7 +242,21 @@ export default class UVDisplacementScene extends SceneBase{
             if(value.isDown){
                 this.Paint(value);
             }
-        }) 
+        })       
+
+        this.blitter.blit(this.flowPaintTexture.RenderTarget.texture, this.flowWriteTexture, this.renderer, this.camera, this.additiveCopyMaterial);
+        this.blitter.blit(this.flowWriteTexture.texture, this.flowReadTexture, this.renderer, this.camera)
+
+        this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.0));
+        this.renderer.setRenderTarget(this.flowWriteTexture);
+        this.renderer.clear();
+
+        this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.0));
+        this.renderer.setRenderTarget(this.flowPaintTexture.RenderTarget)
+        this.renderer.clear();
+        
+        this.renderer.setRenderTarget(null);
+        
     }
 
     Paint(pointerInfo:Pointer){
@@ -189,10 +276,12 @@ export default class UVDisplacementScene extends SceneBase{
         let pos = new THREE.Vector3(pointerInfo.position.x, pointerInfo.position.y,remappedDepth).unproject(this.camera);
 
         if(this.allowPaintOnHero){
-            this.paintableTexture.Paint(this.renderer,this.camera,this,pos)
+            this.albedoPaintTexture.Paint(this.renderer,this.camera,this.heroModel,pos)
         }
-        else{
-            this.paintableTexture.Paint(this.renderer,this.camera, this.paintCanvasModel, pos);
+        
+        {
+            this.albedoPaintTexture.Paint(this.renderer,this.camera, this.albedoPaintCanvasModel, pos);
+            this.flowPaintTexture.Paint(this.renderer,this.camera,this.flowPaintCanvasModel,pos)
         }
     }
 
@@ -250,9 +339,12 @@ export default class UVDisplacementScene extends SceneBase{
         }
         materialSettingsGroup.add(buttonsFuncs, "mainTex").name("Set main texture")
 
-        let brushColor = this.gui.addColor(this.paintableTexture,'brushColor');
+        let brushColor = this.gui.addColor(this.albedoPaintTexture,'brushColor');
         brushColor.onChange(()=>{
-            this.paintableTexture.SetColor(this.paintableTexture.brushColor);
+            this.albedoPaintTexture.SetColor(this.albedoPaintTexture.brushColor);
         });
+
+        this.gui.add(this,"allowPaintOnHero").name("Paint on both");
+        this.gui.add(this, "setFireTextureToWhite");
     }
 }

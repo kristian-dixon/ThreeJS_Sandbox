@@ -14,6 +14,7 @@ export interface PaintableTextureOptions{
         jitter?: {value: THREE.Vector2}
     }
 
+    blendMode?: THREE.Blending;
     fragmentShader?: string;
 }
 
@@ -24,6 +25,7 @@ export class PaintableTexture
     brushColor= 0xff0000; // for the debug gui
 
     blitMaterial: THREE.Material;
+    
     quad: THREE.Mesh;
 
     Settings = {
@@ -41,9 +43,10 @@ export class PaintableTexture
         }
        
         this.RenderTarget = new THREE.WebGLRenderTarget(rtWidth, rtHeight);
-        
+        this.RenderTarget.texture.wrapS = THREE.RepeatWrapping;
+        this.RenderTarget.texture.wrapT = THREE.RepeatWrapping;
         this.RenderTarget.texture.generateMipmaps = false;
-        this.RenderTarget.samples = 1;
+     
 
         this.PaintMaterial = new THREE.ShaderMaterial({
             uniforms:this.Settings,
@@ -52,7 +55,8 @@ export class PaintableTexture
             depthTest: false,
             depthWrite: false,
             side:THREE.DoubleSide,
-            transparent:true
+            transparent:true,
+            blending: !! options?.blendMode ? options.blendMode : THREE.NormalBlending
         });
 
         this.blitMaterial =  new THREE.ShaderMaterial({
@@ -164,7 +168,7 @@ export class PaintableTexture
     Import(texture: THREE.Texture){     
         (this.blitMaterial as THREE.ShaderMaterial).uniforms.uMap.value = texture;
         this.dirty = true;
-        setTimeout(()=>{this.dirty = false}, 200);
+        setTimeout(()=>{this.dirty = false}, 500);
     }
 
     Export(renderer: THREE.WebGLRenderer){
