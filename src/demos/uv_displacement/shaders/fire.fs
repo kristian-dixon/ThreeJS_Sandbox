@@ -28,7 +28,14 @@ void main()	{
     vec2 uvScrolled = (vUv * displacementUVScale) + scrollSpeed * Time;
     vec2 disp = texture2D(dispTex, uvScrolled).xy;
 
-    disp = -((disp * 2.0) - 1.0) * displacementStr * pow(vUv.y + 0.001,verticalStrength);
+    float gradient = pow(vUv.y + 0.001,verticalStrength);
+    #ifdef OUTPUT_GRADIENT
+        gl_FragColor = vec4(gradient, 0.0,0.0,1);
+        return;
+    #endif
+
+
+    disp = ((disp * 2.0) - 1.0) * displacementStr * gradient;
 
     vec4 color = texture2D(mainTex, vUv + disp);
    

@@ -67,7 +67,7 @@ export class DepthPick
         ))
     }
 
-    pick(cssPosition:THREE.Vector2, scene: THREE.Scene, renderer:THREE.WebGLRenderer, camera:THREE.PerspectiveCamera):number
+    pick(cssPosition:THREE.Vector2, scene: THREE.Mesh | THREE.Scene, renderer:THREE.WebGLRenderer, camera:THREE.PerspectiveCamera):number
     {
         const pixelRatio = renderer.getPixelRatio();
         camera.setViewOffset(

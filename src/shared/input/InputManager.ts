@@ -199,6 +199,7 @@ export class InputManager{
 
 export class Pointer{
     cssPosition: THREE.Vector2 = new THREE.Vector2(0,0);
+    wsPosition: THREE.Vector3 = null;
     position: THREE.Vector2 = new THREE.Vector2(0,0);
     isDown = false;
     constructor(cssPos: THREE.Vector2, pos:THREE.Vector2)

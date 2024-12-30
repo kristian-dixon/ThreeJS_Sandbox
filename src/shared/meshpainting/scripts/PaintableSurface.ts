@@ -34,7 +34,8 @@ export class PaintableTexture
         blendStrength: {value: 0.5},
         brushRadius: {value: 0.1},
         brushFalloff: {value: 0.5},
-        jitter: {value:new THREE.Vector2(0,0)}
+        jitter: {value:new THREE.Vector2(0,0)},
+        velocity: {value:new THREE.Vector3(0,0)}
     }
 
     constructor(rtWidth:number, rtHeight: number, options?:PaintableTextureOptions){
@@ -82,10 +83,14 @@ export class PaintableTexture
         this.quad = new THREE.Mesh(new THREE.PlaneGeometry(),this.blitMaterial)
     }
 
-    Paint(renderer:THREE.WebGLRenderer, camera:THREE.Camera, root:THREE.Object3D, brushPosition:THREE.Vector3)
+    Paint(renderer:THREE.WebGLRenderer, camera:THREE.Camera, root:THREE.Object3D, brushPosition:THREE.Vector3, velocity?:THREE.Vector3)
     {
         this.PaintMaterial["uniforms"].brushPos.value = brushPosition;
         this.PaintMaterial["uniforms"].jitter.value = new THREE.Vector3((Math.random()*2.0-1.0)*0.01,(Math.random()*2.0-1.0)*0.01);
+
+        if(velocity){
+            this.PaintMaterial["uniforms"].velocity.value = velocity;
+        }
         renderer.autoClearColor = false;
         renderer.setRenderTarget(this.RenderTarget);
         

@@ -26,17 +26,16 @@ import VectorPaintShader from "../shaders/vectorpaint.fs";
 import { Blitter } from '../../../shared/blitter/blit';
 
 import DefaultVSBlit from "../../../shared/blitter/shaders/blit.vs";
-
+export enum PaintMode{
+    None,
+    Albedo,
+    Flow
+}
 /**
  * A class to set up some basic scene elements to minimize code in the
  * main execution file.
  */
 export default class UVDisplacementScene extends SceneBase{
-    
-   
-    recieveMessage(call: string, args: any) {
-        throw new Error('Method not implemented.');
-    }
 
     // A dat.gui class debugger that is added by default
     gui: GUI = null;
@@ -63,8 +62,8 @@ export default class UVDisplacementScene extends SceneBase{
 
     fireTexture:THREE.Texture;
     whiteTexture:THREE.Texture;
-    albedoPaintCanvasModel:THREE.Mesh;
-    flowPaintCanvasModel:THREE.Mesh;
+    paintCanvas:THREE.Mesh;
+    
 
     allowPaintOnHero: boolean = false;
 
@@ -74,6 +73,7 @@ export default class UVDisplacementScene extends SceneBase{
     blitter: Blitter = new Blitter();
 
     additiveCopyMaterial: THREE.ShaderMaterial;
+    dispTex: THREE.Texture;
 
     initialize(debug: boolean = true, addGridHelper: boolean = true){
         window["scene"] = this;
@@ -105,10 +105,10 @@ export default class UVDisplacementScene extends SceneBase{
         this.whiteTexture = new THREE.TextureLoader().load(WhiteTex);
 
         this.flowWriteTexture = new THREE.WebGLRenderTarget(512,512);
-        this.flowWriteTexture.texture.wrapS = this.flowWriteTexture.texture.wrapT = THREE.RepeatWrapping;
+        this.flowWriteTexture.texture.wrapS = this.flowWriteTexture.texture.wrapT = THREE.MirroredRepeatWrapping;
 
         this.flowReadTexture = new THREE.WebGLRenderTarget(512,512);
-        this.flowReadTexture.texture.wrapS = this.flowReadTexture.texture.wrapT = THREE.RepeatWrapping;
+        this.flowReadTexture.texture.wrapS = this.flowReadTexture.texture.wrapT = THREE.MirroredRepeatWrapping;
 
         this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.0));
         this.renderer.setRenderTarget(this.flowPaintTexture.RenderTarget);
@@ -120,9 +120,9 @@ export default class UVDisplacementScene extends SceneBase{
         
         this.renderer.setRenderTarget(null);
 
-        let dispTex = new THREE.TextureLoader().load(FlowTex);
-        dispTex.wrapS = THREE.RepeatWrapping;
-        dispTex.wrapT = THREE.RepeatWrapping;
+        this.dispTex = new THREE.TextureLoader().load(FlowTex);
+        this.dispTex.wrapS = THREE.RepeatWrapping;
+        this.dispTex.wrapT = THREE.RepeatWrapping;
 
         this.material = new THREE.ShaderMaterial({
             uniforms:{
@@ -131,39 +131,31 @@ export default class UVDisplacementScene extends SceneBase{
                 verticalStrength:{value:3.6},
                 scrollSpeed:{value: new THREE.Vector2(0.4, -1)},
                 displacementUVScale:{value: new THREE.Vector2(5, 2.6)},
-                mainTex: {value:this.fireTexture},
-                //dispTex: {value:this.flowReadTexture.texture},
-                dispTex: {value:dispTex},
+                mainTex: {value:this.fireTexture},               
+                dispTex: {value:this.dispTex},
             },
             vertexShader: FireVertexShader,
             fragmentShader: FireFragmentShader,
-            transparent:true
+            transparent:true,
+            depthWrite:true
         })
 
         this.heroModel = new THREE.Mesh(geometry, this.material);
         this.heroModel.position.set(-0.55,0,0);
         //this.add(this.heroModel);
         
-        this.albedoPaintCanvasModel = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+        this.paintCanvas = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
             map:this.albedoPaintTexture.RenderTarget.texture
         }))
 
-        this.albedoPaintCanvasModel.position.set(0.55,0,0);
-        this.add(this.albedoPaintCanvasModel); 
+        this.paintCanvas.position.set(0.525,0,0);
+        this.add(this.paintCanvas); 
         
-        this.flowPaintCanvasModel = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
-            //map:this.flowPaintTexture.RenderTarget.texture
-            map:this.flowReadTexture.texture
-        }));
-        this.flowPaintCanvasModel.position.set(1.6,0,0);
-        this.add(this.flowPaintCanvasModel);
-
+       
         this.albedoPaintTexture.Import(this.fireTexture);
         this.albedoPaintTexture.Paint(this.renderer,this.camera,this.heroModel,new THREE.Vector3(0,10000,0));
 
-        //this.flowPaintTexture.Import(dispTex);
-        //this.flowPaintTexture.Paint(this.renderer,this.camera,this.heroModel,new THREE.Vector3(0,10000,0));
-
+        
         this.additiveCopyMaterial = new THREE.ShaderMaterial({
             vertexShader:DefaultVSBlit,
             fragmentShader:
@@ -177,7 +169,7 @@ export default class UVDisplacementScene extends SceneBase{
                     vec2 brushVal = texture2D(map, vUv).xy;
                     brushVal = (brushVal * 2.0) - 1.0;
                     
-                    current.xy += brushVal * 0.1;
+                    current.xy += -brushVal * 0.15;
                     current.a = 1.0;
                     gl_FragColor = current;
                     return;
@@ -208,9 +200,14 @@ export default class UVDisplacementScene extends SceneBase{
         this.effectComposer.addPass(renderPass2);
 
         this.effectComposer.addPass(new OutputPass())
+
+        this.changePage(0);
     }
+
     effectComposer: EffectComposer;
     bloomPass: UnrealBloomPass;
+
+
     loadTexture(url:string){
         var loader = new THREE.TextureLoader();
         loader.setCrossOrigin("");
@@ -239,19 +236,26 @@ export default class UVDisplacementScene extends SceneBase{
 
         if(window.self != window.top)
             this.renderer.setClearAlpha(0);
-        
+
         this.effectComposer.setSize(window.innerWidth, window.innerHeight);
         this.effectComposer.render(dt);
-        this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.0));
-      
-        
-        if(this.albedoPaintTexture.dirty){
-            this.albedoPaintTexture.Paint(this.renderer,this.camera,this.albedoPaintCanvasModel,new THREE.Vector3(0,10000,0));
-        }
 
         if(this.material){
             this.material.uniforms["Time"]["value"] += 0.016;
             this.material.needsUpdate = true;
+        }
+
+        if(this.albedoPaintTexture.dirty){
+            this.albedoPaintTexture.Paint(this.renderer,this.camera,this.paintCanvas,new THREE.Vector3(0,10000,0));
+        }
+
+        if(this.flowPaintTexture.dirty){
+            this.flowPaintTexture.Paint(this.renderer,this.camera,this.paintCanvas,new THREE.Vector3(0,10000,0));
+        }
+
+
+        if(this.activePainter == null){
+            return;
         }
 
         this.input.pointers.forEach((value,key)=>{ 
@@ -260,19 +264,21 @@ export default class UVDisplacementScene extends SceneBase{
             }
         })       
 
-        this.blitter.blit(this.flowPaintTexture.RenderTarget.texture, this.flowWriteTexture, this.renderer, this.camera, this.additiveCopyMaterial);
-        this.blitter.blit(this.flowWriteTexture.texture, this.flowReadTexture, this.renderer, this.camera)
+        if(this.currentPaintMode == PaintMode.Flow)
+        {
+            this.blitter.blit(this.flowPaintTexture.RenderTarget.texture, this.flowWriteTexture, this.renderer, this.camera, this.additiveCopyMaterial);
+            this.blitter.blit(this.flowWriteTexture.texture, this.flowReadTexture, this.renderer, this.camera)
 
-        //this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.0));
-        this.renderer.setRenderTarget(this.flowWriteTexture);
-        this.renderer.clear();
+            this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.0));
+            this.renderer.setRenderTarget(this.flowWriteTexture);
+            this.renderer.clear();
 
-        //this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.0));
-        this.renderer.setRenderTarget(this.flowPaintTexture.RenderTarget)
-        this.renderer.clear();
-        
-        this.renderer.setRenderTarget(null);
-        
+            this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.0));
+            this.renderer.setRenderTarget(this.flowPaintTexture.RenderTarget)
+            this.renderer.clear();
+            
+            this.renderer.setRenderTarget(null);
+        }
     }
 
     Paint(pointerInfo:Pointer){
@@ -281,24 +287,35 @@ export default class UVDisplacementScene extends SceneBase{
             return;
         }
 
-        let depth = this.depthPicker.pick(pointerInfo.cssPosition, this, this.renderer, this.camera);
-        if(depth >= (this.camera.far - (this.camera.far * 0.001)))
+        let depth = this.depthPicker.pick(pointerInfo.cssPosition, this.paintCanvas, this.renderer, this.camera);
+
+        console.log(depth);
+
+        if(depth >= 1)
         {
-            //Probably casting against the skybox
-            return;
+            depth = this.depthPicker.pick(pointerInfo.cssPosition, this.heroModel, this.renderer, this.camera);
+            if(depth >= 1){
+                //Probably casting against the skybox
+                return;
+            }
+            
         }
 
         let remappedDepth = (depth*2)-1.0;
         let pos = new THREE.Vector3(pointerInfo.position.x, pointerInfo.position.y,remappedDepth).unproject(this.camera);
 
-        if(this.allowPaintOnHero){
-            this.albedoPaintTexture.Paint(this.renderer,this.camera,this.heroModel,pos)
+        let velocity = null;
+        if(pointerInfo.wsPosition){
+            velocity = pos.clone().sub(pointerInfo.wsPosition);
         }
         
-        {
-            this.albedoPaintTexture.Paint(this.renderer,this.camera, this.albedoPaintCanvasModel, pos);
-            this.flowPaintTexture.Paint(this.renderer,this.camera,this.flowPaintCanvasModel,pos)
+        if(this.allowPaintOnHero){
+            this.activePainter.Paint(this.renderer,this.camera,this.heroModel,pos, velocity)
         }
+        
+        this.activePainter.Paint(this.renderer,this.camera, this.paintCanvas, pos, velocity);
+
+        pointerInfo.wsPosition = pos.clone();
     }
 
     /**
@@ -321,6 +338,7 @@ export default class UVDisplacementScene extends SceneBase{
 
 
     initStandaloneGUI(){
+        if(window.self != window.top) return;
         this.gui =  new GUI();
 
         const materialSettingsGroup = this.gui.addFolder("Material Properties");
@@ -362,5 +380,157 @@ export default class UVDisplacementScene extends SceneBase{
 
         this.gui.add(this,"allowPaintOnHero").name("Paint on both");
         this.gui.add(this, "setFireTextureToWhite");
+    }
+
+    
+
+
+
+    
+    recieveMessage(call: string, args: any) {
+        this[call](args);
+    }
+
+
+    changePage(targetPage: number)
+    {
+        if(targetPage == 0 || targetPage == 1)
+        {
+            //Focus on hero object, hide other objects
+            this.heroModel.position.set(0,-0.25,0);
+            this.heroModel.scale.set(2,2,2);
+
+            this.visible = false;
+        }
+        else if(targetPage == 2)
+        {
+            this.heroModel.position.set(-0.525,0,0);
+            this.heroModel.scale.set(1.0,1.0,1.0);
+
+            this.material.uniforms.scrollSpeed.value = new THREE.Vector2(0,0);
+            this.material.uniforms.displacementUVScale.value = new THREE.Vector2(1,1);
+            this.material.uniforms.displacementStr.value = 0.1;
+            this.material.uniforms.verticalStrength.value = 0;
+            this.visible = true;
+
+            
+            this.setPaintMode("Flow");
+            this.setRenderDrawnFlowmap(true);
+        }        
+
+        if(targetPage == 1){
+            this.page1MaterialSetup();
+        }
+    }
+
+    useDrawnFire = false;
+    useDrawnFlowmap = false;
+
+    resetMaterials()
+    {
+        let uniforms = this.material.uniforms;
+        
+        uniforms.Time = {value:0.0};
+        uniforms.displacementStr = {value:0.3};
+        uniforms.verticalStrength = {value:3.6};
+        uniforms.scrollSpeed = {value: new THREE.Vector2(0.4, -1)},
+        uniforms.displacementUVScale={value: new THREE.Vector2(5, 2.6)};
+        uniforms.mainTex = {value:this.useDrawnFire? this.albedoPaintTexture.RenderTarget.texture : this.fireTexture};               
+        uniforms.dispTex = {value:this.useDrawnFlowmap? this.flowPaintTexture.RenderTarget.texture : this.dispTex};
+    }
+
+    page1MaterialSetup()
+    {
+        let uniforms = this.material.uniforms;
+        
+        uniforms.Time = {value:0.0};
+        uniforms.displacementStr = {value:0.0};
+        uniforms.verticalStrength = {value:0};
+        uniforms.scrollSpeed = {value: new THREE.Vector2(0, 0)},
+        uniforms.displacementUVScale={value: new THREE.Vector2(1, 1)};
+        uniforms.mainTex = {value:this.useDrawnFire? this.albedoPaintTexture.RenderTarget.texture : this.fireTexture};               
+        uniforms.dispTex = {value:this.useDrawnFlowmap? this.flowPaintTexture.RenderTarget.texture : this.dispTex};
+    }
+
+    
+
+    setRenderDrawnAlbedo(val:boolean){
+        this.useDrawnFire = val;
+        this.material.uniforms.mainTex = {value:this.useDrawnFire? this.albedoPaintTexture.RenderTarget.texture : this.fireTexture};    
+    }
+    
+    setRenderDrawnFlowmap(val:boolean)
+    {
+        this.useDrawnFlowmap = val;
+        this.material.uniforms.dispTex = {value:this.useDrawnFlowmap? this.flowReadTexture.texture : this.dispTex};
+    }
+
+    setDisplacementStrength(val:number){
+        this.material.uniforms.displacementStr.value = val;
+    }
+
+    setUVScaleX(val:number){
+        this.material.uniforms.displacementUVScale.value.x = val;
+    }
+
+    setUVScaleY(val:number){
+        this.material.uniforms.displacementUVScale.value.y = val;
+    }
+
+    setUVScrollSpeedX(val:number){
+        this.material.uniforms.scrollSpeed.value.x = val;
+    }
+
+    setUVScrollSpeedY(val:number)
+    {
+        this.material.uniforms.scrollSpeed.value.y = val;
+    }
+
+    setRenderGradient(val:boolean){
+        this.material.defines.OUTPUT_GRADIENT = val;
+    }
+
+    setGradientStrength(val:number){
+        this.material.uniforms.verticalStrength.value = val;
+    }
+
+    setBrushColour(colour:string){
+        this.albedoPaintTexture.SetColor(colour);
+    }
+
+    currentPaintMode = PaintMode.None;
+    activePainter: PaintableTexture = null;
+
+    setPaintMode(mode:string){
+        let targetMode = PaintMode[mode];
+        switch(targetMode)
+        {
+            case PaintMode.None:
+                this.activePainter = null;
+                break;
+            case PaintMode.Albedo:
+                this.activePainter = this.albedoPaintTexture;
+                (this.paintCanvas.material as THREE.MeshBasicMaterial).map = this.albedoPaintTexture.RenderTarget.texture;
+                break;
+            case PaintMode.Flow:
+                this.activePainter = this.flowPaintTexture;
+                (this.paintCanvas.material as THREE.MeshBasicMaterial).map = this.flowReadTexture.texture;
+                break;
+        }
+        this.currentPaintMode = targetMode;
+    }   
+
+    exportFlowmap()
+    {
+        this.flowPaintTexture.Export(this.renderer);
+    }
+
+    importFlowmap(url:string){
+        var loader = new THREE.TextureLoader();
+        loader.setCrossOrigin("");
+        let fireTex = loader.load(url);
+        fireTex.wrapS = THREE.RepeatWrapping;
+        fireTex.wrapT = THREE.RepeatWrapping;
+        this.flowPaintTexture.Import(fireTex);
     }
 }
