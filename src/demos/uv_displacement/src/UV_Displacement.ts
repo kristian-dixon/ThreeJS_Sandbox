@@ -65,7 +65,7 @@ export default class UVDisplacementScene extends SceneBase{
     paintCanvas:THREE.Mesh;
     
 
-    allowPaintOnHero: boolean = false;
+    allowPaintOnHero: boolean = true;
 
     flowReadTexture: THREE.WebGLRenderTarget;
     flowWriteTexture: THREE.WebGLRenderTarget;
