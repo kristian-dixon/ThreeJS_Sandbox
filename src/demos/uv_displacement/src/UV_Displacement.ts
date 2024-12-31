@@ -241,7 +241,7 @@ export default class UVDisplacementScene extends SceneBase{
         this.effectComposer.render(dt);
 
         if(this.material){
-            this.material.uniforms["Time"]["value"] += 0.016;
+            this.material.uniforms["Time"]["value"] += dt;
             this.material.needsUpdate = true;
         }
 
@@ -288,8 +288,6 @@ export default class UVDisplacementScene extends SceneBase{
         }
 
         let depth = this.depthPicker.pick(pointerInfo.cssPosition, this.paintCanvas, this.renderer, this.camera);
-
-        console.log(depth);
 
         if(depth >= 1)
         {
@@ -401,6 +399,10 @@ export default class UVDisplacementScene extends SceneBase{
             this.heroModel.scale.set(2,2,2);
 
             this.visible = false;
+
+            this.setPaintMode("None");
+            this.setRenderDrawnFlowmap(false);
+            this.resetMaterials();
         }
         else if(targetPage == 2)
         {
