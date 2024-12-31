@@ -278,6 +278,10 @@ export default class UVDisplacementScene extends SceneBase{
             this.renderer.clear();
             
             this.renderer.setRenderTarget(null);
+
+            this.renderer.setClearColor(new THREE.Color(0,0,0.0))
+            this.renderer.setClearAlpha(0);
+
         }
     }
 

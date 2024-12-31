@@ -71,7 +71,7 @@ export class PaintableTexture
                 uniform sampler2D uMap;
                               
                 void main(){
-                    gl_FragColor = vec4(texture2D(uMap, vUv).xyz,1.0);
+                    gl_FragColor = vec4(texture2D(uMap, vUv).xyzw);
                     return;
                 }
             `,
