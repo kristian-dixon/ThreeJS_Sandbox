@@ -131,7 +131,7 @@ export default class UVDisplacementScene extends SceneBase{
                 verticalStrength:{value:3.6},
                 scrollSpeed:{value: new THREE.Vector2(0.4, -1)},
                 displacementUVScale:{value: new THREE.Vector2(5, 2.6)},
-                mainTex: {value:this.fireTexture},               
+                mainTex: {value:this.albedoPaintTexture.RenderTarget.texture},               
                 dispTex: {value:this.dispTex},
             },
             vertexShader: FireVertexShader,
@@ -426,7 +426,7 @@ export default class UVDisplacementScene extends SceneBase{
         }
     }
 
-    useDrawnFire = false;
+    useDrawnFire = true;
     useDrawnFlowmap = false;
 
     resetMaterials()
