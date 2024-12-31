@@ -422,6 +422,7 @@ export default class UVDisplacementScene extends SceneBase{
 
         if(targetPage == 1){
             this.page1MaterialSetup();
+            this.allowPaintOnHero = true;
         }
     }
 
