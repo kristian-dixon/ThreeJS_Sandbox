@@ -74,7 +74,9 @@ export default class RefractionScene extends SceneBase{
                 map: {value:this.copyRenderTarget.texture},
                 normalMap: {value:null},
                 refractionIndex: {value:-1},
-                strength: {value:0.3}
+                strength: {value:0.3},
+                normalMapStrength: {value:0},
+                tint: {value:new THREE.Color('white')}
             },
             depthWrite:false
         })
@@ -115,9 +117,10 @@ export default class RefractionScene extends SceneBase{
         let pbrGlassMat = new THREE.MeshPhysicalMaterial({
             transparent:true,
             color: new THREE.Color('#FFFFFF'),
-            opacity: 0.1,
+            opacity: 0.2,
             metalness: 1.0,
-            roughness:0.0
+            roughness:0.0,
+            normalScale:new THREE.Vector2(0.1,0.1)
         })
         this.transparentScene.add( new THREE.Mesh(geo,pbrGlassMat ))
        // this.transparentScene.add(light);
@@ -202,10 +205,23 @@ export default class RefractionScene extends SceneBase{
         }
     }
 
+    tempColor:string = "#FFFFFF";
     initStandaloneGUI(){
         this.gui = new GUI();  
         this.gui.add(this.refractionMaterial.uniforms.refractionIndex, "value",-1,1,0.01).name("Refraction index");
-        this.gui.add(this.refractionMaterial.uniforms.strength, "value").name("Strength");    
+        this.gui.add(this.refractionMaterial.uniforms.strength, "value").name("Strength");  
+        this.gui.add(this.refractionMaterial.uniforms.normalMapStrength, "value").name("Normal Map Strength");
+        let tint = this.gui.addColor(this, 'tempColor');
+        tint.onChange(()=>{
+            this.refractionMaterial.uniforms.tint.value = new THREE.Color(this.tempColor);
+            this.refractionMaterial.needsUpdate = true;
+        });
+        // brushColor.onChange(()=>{
+        //     this.paintableTexture.SetColor(this.paintableTexture.brushColor);
+        // });
+        // brushColor.setValue(0xff0000)
+        // brushColor.name("Colour");
+
         this.gui.add(this, 'initWebcam');
     }
 }
