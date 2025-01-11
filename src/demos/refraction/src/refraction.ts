@@ -45,6 +45,8 @@ export default class RefractionScene extends SceneBase{
 
     refractionMaterial: THREE.ShaderMaterial;
 
+    sphere;gltf;
+
     initialize(debug: boolean = true, addGridHelper: boolean = true){
         window["scene"] = this;
        
@@ -97,8 +99,9 @@ export default class RefractionScene extends SceneBase{
         let geo = new THREE.SphereGeometry(1);
         geo.computeTangents();
         let sphere = new THREE.Mesh(geo, this.refractionMaterial);
-        //this.backfaceNormalsScene.add(sphere);
-        
+        this.refractionGroup.add(sphere);
+        this.sphere = sphere;
+
         this.transparentScene = new THREE.Scene();
         let pbrGlassMat = new THREE.MeshPhysicalMaterial({
             transparent:true,
@@ -130,7 +133,7 @@ export default class RefractionScene extends SceneBase{
             side:THREE.BackSide
         })
         //this.transparentScene.add( new THREE.Mesh(geo,pbrGlassMat ))
-
+        this.sphere.visible= false;
         let self = this;
         //Load demo model
         let gltfLoader = new GLTFLoader();
@@ -144,7 +147,7 @@ export default class RefractionScene extends SceneBase{
             gltf.scene.position.copy(center);
             gltf.scene.scale.set(scale,scale,scale);
             //gltf.scene.rotateY(Math.PI / 2.0)
-
+            this.gltf = gltf.scene;
             gltf.scene.traverse((child)=>{
                 if(child instanceof THREE.Mesh)
                 {
@@ -250,6 +253,12 @@ export default class RefractionScene extends SceneBase{
         }
     }
 
+    changeModel()
+    {
+        this.gltf.visible = this.sphere.visible;
+        this.sphere.visible = !this.sphere.visible;
+    }
+
     addWindowResizing()
     {
         let self = this;
@@ -278,6 +287,7 @@ export default class RefractionScene extends SceneBase{
         this.gui.add(this.refractionMaterial.uniforms.refractionIndexB, "value",-1,1,0.01).name("B Refraction");
         this.gui.add(this.refractionMaterial.uniforms.strength, "value").name("Strength");  
         this.gui.add(this.refractionMaterial.uniforms.normalMapStrength, "value").name("Normal Map Strength");
+        this.gui.add(this, "changeModel");
         let tint = this.gui.addColor(this, 'tempColor');
         tint.onChange(()=>{
             this.refractionMaterial.uniforms.tint.value = new THREE.Color(this.tempColor);
