@@ -10,6 +10,7 @@ import normalMap from "../textures/bumpyNormalMap.jpg";
 import { Blitter } from '../../../shared/blitter/blit';
 import refractionVS from "../shader/refraction.vs";
 import refractionFS from "../shader/refraction.fs";
+import normalBuffer from "../shader/normalBuffer.fs";
 
 export default class RefractionScene extends SceneBase{
    
@@ -33,11 +34,14 @@ export default class RefractionScene extends SceneBase{
     sceneRenderTarget: THREE.WebGLRenderTarget;
     copyRenderTarget: THREE.WebGLRenderTarget;
 
+    backfaceNormalRenderTarget: THREE.WebGLRenderTarget;
+
     orbitals: OrbitControls = null;
     blitter : Blitter = new Blitter();
 
     refractionGroup: THREE.Group;
     transparentScene: THREE.Scene;
+    backfaceNormalsScene: THREE.Scene;
 
     refractionMaterial: THREE.ShaderMaterial;
 
@@ -63,6 +67,7 @@ export default class RefractionScene extends SceneBase{
 
         this.sceneRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height, {generateMipmaps:true});
         this.copyRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height, {generateMipmaps:true});
+        this.backfaceNormalRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height, {generateMipmaps:true});
         this.addWindowResizing();
  
        
@@ -78,29 +83,51 @@ export default class RefractionScene extends SceneBase{
                 refractionIndexG: {value:-1},
                 refractionIndexB: {value:-1},
                 strength: {value:0.3},
-                normalMapStrength: {value:0},
-                tint: {value:new THREE.Color('white')}
+                normalMapStrength: {value:0.0},
+                tint: {value:new THREE.Color('white')},
+                backfaceNormals:{value : this.backfaceNormalRenderTarget.texture}
             },
             depthWrite:false
         })
 
-
+        this.backfaceNormalsScene = new THREE.Scene();
 
         this.refractionGroup = new THREE.Group();
 
         let geo = new THREE.SphereGeometry(1);
         geo.computeTangents();
         let sphere = new THREE.Mesh(geo, this.refractionMaterial);
-        //this.refractionGroup.add(sphere);
-
+        //this.backfaceNormalsScene.add(sphere);
+        
         this.transparentScene = new THREE.Scene();
         let pbrGlassMat = new THREE.MeshPhysicalMaterial({
             transparent:true,
             color: new THREE.Color('#FFFFFF'),
-            opacity: 0.2,
+            opacity: 0.0,
             metalness: 1.0,
             roughness:0.0,
             normalScale:new THREE.Vector2(0.1,0.1)
+        })
+        let sphere2 = new THREE.Mesh(geo, pbrGlassMat);
+        //this.backfaceNormalsScene.add(sphere2);
+        
+        let normalMat = new THREE.ShaderMaterial({
+            vertexShader: refractionVS,
+            fragmentShader: normalBuffer,
+            uniforms: {
+                map: {value:this.copyRenderTarget.texture},
+                normalMap: {value:null},
+                refractionIndex: {value:-1},
+                refractionIndexR: {value:-1},
+                refractionIndexG: {value:-1},
+                refractionIndexB: {value:-1},
+                strength: {value:0.3},
+                normalMapStrength: {value:0},
+                tint: {value:new THREE.Color('white')}
+            },
+            //depthWrite:false,
+
+            side:THREE.BackSide
         })
         //this.transparentScene.add( new THREE.Mesh(geo,pbrGlassMat ))
 
@@ -136,6 +163,17 @@ export default class RefractionScene extends SceneBase{
                 }
             });
             self.transparentScene.add(transparentCopy);
+
+
+            let backfaceNormalCopy = gltf.scene.clone();
+            backfaceNormalCopy.traverse((child)=>{
+                if(child instanceof THREE.Mesh)
+                {
+                    (child.geometry as THREE.BufferGeometry).computeTangents();
+                    child.material = normalMat; 
+                }
+            });
+            this.backfaceNormalsScene.add(backfaceNormalCopy);
         });
      
         
@@ -172,6 +210,10 @@ export default class RefractionScene extends SceneBase{
     update(){
         this.orbitals.update();
         this.camera.updateProjectionMatrix();
+
+        this.backfaceNormalsScene.background = new THREE.Color('red');
+        this.renderer.setRenderTarget(this.backfaceNormalRenderTarget);
+        this.renderer.render(this.backfaceNormalsScene, this.camera);
 
         this.renderer.setRenderTarget(this.sceneRenderTarget);
         this.renderer.render(this, this.camera);
@@ -221,7 +263,9 @@ export default class RefractionScene extends SceneBase{
 
             self.sceneRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
             self.copyRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
+            self.backfaceNormalRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height, {generateMipmaps:true});
             self.refractionMaterial.uniforms.map.value = self.copyRenderTarget.texture;   
+            self.refractionMaterial.uniforms.backfaceNormals.value = self.backfaceNormalRenderTarget.texture;   
         }
     }
 

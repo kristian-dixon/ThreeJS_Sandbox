@@ -20,20 +20,10 @@ void main()	{
     vec3 unpackedNormals = (texture2D(normalMap, vUv ).xyz * 2.0) - 1.0;
     unpackedNormals *= vec3(normalMapStrength,normalMapStrength,1.0);
     vec3 normal = unpackedNormals.x * wsTangent + unpackedNormals.y * wsBinormal + unpackedNormals.z * wsNormal;
-    //normal = normalize(wsNormal);
+    normal = normalize(normal);
 
 
-    vec3 viewDir1 = (viewMatrix * vec4(wsPos-cameraPosition,0.0)).xyz;
 
-    vec3 refractionR = refract(normalize(viewDir), normalize(normal), refractionIndexR);
-    float r = texture2D(map, screenUv + refractionR.xy * strength).r;
-
-    vec3 refractionG = refract(normalize(viewDir), normalize(normal), refractionIndexG);
-    float g = texture2D(map, screenUv + refractionG.xy * strength).g;
-
-    vec3 refractionB = refract(normalize(viewDir), normalize(normal), refractionIndexB);
-    float b = texture2D(map, screenUv + refractionB.xy * strength).b;
-
-    gl_FragColor = vec4(r,g,b,1.0) * vec4(tint,1.0);
+    gl_FragColor = vec4(normal/2.0+0.5,1.0);
     return;
 }
