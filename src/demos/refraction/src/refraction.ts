@@ -4,7 +4,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 import SceneBase from '../../../SceneBase';
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 
-import model from "../../whiteboard/models/smooth_suzanne.glb"
+import model from "../../whiteboard/models/gem.glb"
 import skybox from "../textures/tears_of_steel_bridge_2k.jpg";
 import normalMap from "../textures/bumpyNormalMap.jpg";
 import { Blitter } from '../../../shared/blitter/blit';
@@ -74,6 +74,9 @@ export default class RefractionScene extends SceneBase{
                 map: {value:this.copyRenderTarget.texture},
                 normalMap: {value:null},
                 refractionIndex: {value:-1},
+                refractionIndexR: {value:-1},
+                refractionIndexG: {value:-1},
+                refractionIndexB: {value:-1},
                 strength: {value:0.3},
                 normalMapStrength: {value:0},
                 tint: {value:new THREE.Color('white')}
@@ -81,7 +84,25 @@ export default class RefractionScene extends SceneBase{
             depthWrite:false
         })
 
-        
+
+
+        this.refractionGroup = new THREE.Group();
+
+        let geo = new THREE.SphereGeometry(1);
+        geo.computeTangents();
+        let sphere = new THREE.Mesh(geo, this.refractionMaterial);
+        //this.refractionGroup.add(sphere);
+
+        this.transparentScene = new THREE.Scene();
+        let pbrGlassMat = new THREE.MeshPhysicalMaterial({
+            transparent:true,
+            color: new THREE.Color('#FFFFFF'),
+            opacity: 0.2,
+            metalness: 1.0,
+            roughness:0.0,
+            normalScale:new THREE.Vector2(0.1,0.1)
+        })
+        //this.transparentScene.add( new THREE.Mesh(geo,pbrGlassMat ))
 
         let self = this;
         //Load demo model
@@ -99,30 +120,29 @@ export default class RefractionScene extends SceneBase{
 
             gltf.scene.traverse((child)=>{
                 if(child instanceof THREE.Mesh)
+                {
+                    (child.geometry as THREE.BufferGeometry).computeTangents();
                     child.material = self.refractionMaterial; 
+                }
             });
 
-            //this.refractionGroup.add(gltf.scene);
+            this.refractionGroup.add(gltf.scene);
+            let transparentCopy = gltf.scene.clone();
+            transparentCopy.traverse((child)=>{
+                if(child instanceof THREE.Mesh)
+                {
+                    (child.geometry as THREE.BufferGeometry).computeTangents();
+                    child.material = pbrGlassMat; 
+                }
+            });
+            self.transparentScene.add(transparentCopy);
         });
      
         
-        this.refractionGroup = new THREE.Group();
 
-        let geo = new THREE.SphereGeometry(1);
-        geo.computeTangents();
-        let sphere = new THREE.Mesh(geo, this.refractionMaterial);
-        this.refractionGroup.add(sphere);
+       
 
-        this.transparentScene = new THREE.Scene();
-        let pbrGlassMat = new THREE.MeshPhysicalMaterial({
-            transparent:true,
-            color: new THREE.Color('#FFFFFF'),
-            opacity: 0.2,
-            metalness: 1.0,
-            roughness:0.0,
-            normalScale:new THREE.Vector2(0.1,0.1)
-        })
-        this.transparentScene.add( new THREE.Mesh(geo,pbrGlassMat ))
+        
        // this.transparentScene.add(light);
        
         const loader = new THREE.TextureLoader();
@@ -209,6 +229,9 @@ export default class RefractionScene extends SceneBase{
     initStandaloneGUI(){
         this.gui = new GUI();  
         this.gui.add(this.refractionMaterial.uniforms.refractionIndex, "value",-1,1,0.01).name("Refraction index");
+        this.gui.add(this.refractionMaterial.uniforms.refractionIndexR, "value",-1,1,0.01).name("R Refraction");
+        this.gui.add(this.refractionMaterial.uniforms.refractionIndexG, "value",-1,1,0.01).name("G Refraction");
+        this.gui.add(this.refractionMaterial.uniforms.refractionIndexB, "value",-1,1,0.01).name("B Refraction");
         this.gui.add(this.refractionMaterial.uniforms.strength, "value").name("Strength");  
         this.gui.add(this.refractionMaterial.uniforms.normalMapStrength, "value").name("Normal Map Strength");
         let tint = this.gui.addColor(this, 'tempColor');
