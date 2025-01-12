@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {GUI} from 'dat.gui';
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
+import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 import SceneBase from '../../../SceneBase';
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 
@@ -15,7 +15,7 @@ import normalBuffer from "../shader/normalBuffer.fs";
 export default class RefractionScene extends SceneBase{
    
     recieveMessage(call: string, args: any) {
-        throw new Error('Method not implemented.');
+        this.dispatchEvent({type:call, message:args});
     }
 
     // A dat.gui class debugger that is added by default
@@ -41,15 +41,13 @@ export default class RefractionScene extends SceneBase{
 
     refractionGroup: THREE.Group;
     transparentScene: THREE.Scene;
-    backfaceNormalsScene: THREE.Scene;
 
-    refractionMaterial: THREE.ShaderMaterial;
-
-    sphere;gltf;
+    webcamFeed: HTMLVideoElement;
 
     initialize(debug: boolean = true, addGridHelper: boolean = true){
         window["scene"] = this;
-       
+        this.initStandaloneGUI();
+
         this.camera = new THREE.PerspectiveCamera(35, this.width / this.height, .1, 100);
         this.camera.position.z = 8;
         this.camera.lookAt(0,0,0);
@@ -66,76 +64,19 @@ export default class RefractionScene extends SceneBase{
         this.renderer.setSize(this.width, this.height);
         
         this.orbitals = new OrbitControls(this.camera, this.renderer.domElement)
-
         this.sceneRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height, {generateMipmaps:true});
         this.copyRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height, {generateMipmaps:true});
-        this.backfaceNormalRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height, {generateMipmaps:true});
-        this.addWindowResizing();
- 
+        this.addWindowResizing();      
        
-        
-        this.refractionMaterial = new THREE.ShaderMaterial({
-            vertexShader: refractionVS,
-            fragmentShader: refractionFS,
-            uniforms: {
-                map: {value:this.copyRenderTarget.texture},
-                normalMap: {value:null},
-                refractionIndex: {value:-1},
-                refractionIndexR: {value:-1},
-                refractionIndexG: {value:-1},
-                refractionIndexB: {value:-1},
-                strength: {value:0.3},
-                normalMapStrength: {value:0.0},
-                tint: {value:new THREE.Color('white')},
-                backfaceNormals:{value : this.backfaceNormalRenderTarget.texture}
-            },
-            depthWrite:false
-        })
-
-        this.backfaceNormalsScene = new THREE.Scene();
 
         this.refractionGroup = new THREE.Group();
-
-        let geo = new THREE.SphereGeometry(1);
-        geo.computeTangents();
-        let sphere = new THREE.Mesh(geo, this.refractionMaterial);
-        this.refractionGroup.add(sphere);
-        this.sphere = sphere;
+        this.initRefractionEffect();
 
         this.transparentScene = new THREE.Scene();
-        let pbrGlassMat = new THREE.MeshPhysicalMaterial({
-            transparent:true,
-            color: new THREE.Color('#FFFFFF'),
-            opacity: 0.0,
-            metalness: 1.0,
-            roughness:0.0,
-            normalScale:new THREE.Vector2(0.1,0.1)
-        })
-        let sphere2 = new THREE.Mesh(geo, pbrGlassMat);
-        //this.backfaceNormalsScene.add(sphere2);
+        this.initGlassEffect();
         
-        let normalMat = new THREE.ShaderMaterial({
-            vertexShader: refractionVS,
-            fragmentShader: normalBuffer,
-            uniforms: {
-                map: {value:this.copyRenderTarget.texture},
-                normalMap: {value:null},
-                refractionIndex: {value:-1},
-                refractionIndexR: {value:-1},
-                refractionIndexG: {value:-1},
-                refractionIndexB: {value:-1},
-                strength: {value:0.3},
-                normalMapStrength: {value:0},
-                tint: {value:new THREE.Color('white')}
-            },
-            //depthWrite:false,
 
-            side:THREE.BackSide
-        })
-        //this.transparentScene.add( new THREE.Mesh(geo,pbrGlassMat ))
-        this.sphere.visible= false;
         let self = this;
-        //Load demo model
         let gltfLoader = new GLTFLoader();
         gltfLoader.load(model, (gltf)=>{
             let bounds = new THREE.Box3().setFromObject(gltf.scene);
@@ -146,77 +87,152 @@ export default class RefractionScene extends SceneBase{
             center = center.multiplyScalar(-scale);
             gltf.scene.position.copy(center);
             gltf.scene.scale.set(scale,scale,scale);
-            //gltf.scene.rotateY(Math.PI / 2.0)
-            this.gltf = gltf.scene;
-            gltf.scene.traverse((child)=>{
-                if(child instanceof THREE.Mesh)
-                {
-                    (child.geometry as THREE.BufferGeometry).computeTangents();
-                    child.material = self.refractionMaterial; 
-                }
-            });
 
-            this.refractionGroup.add(gltf.scene);
-            let transparentCopy = gltf.scene.clone();
-            transparentCopy.traverse((child)=>{
-                if(child instanceof THREE.Mesh)
-                {
-                    (child.geometry as THREE.BufferGeometry).computeTangents();
-                    child.material = pbrGlassMat; 
-                }
-            });
-            self.transparentScene.add(transparentCopy);
-
-
-            let backfaceNormalCopy = gltf.scene.clone();
-            backfaceNormalCopy.traverse((child)=>{
-                if(child instanceof THREE.Mesh)
-                {
-                    (child.geometry as THREE.BufferGeometry).computeTangents();
-                    child.material = normalMat; 
-                }
-            });
-            this.backfaceNormalsScene.add(backfaceNormalCopy);
-        });
-     
+            this.dispatchEvent({type:"GltfLoaded", message:gltf})  
+        });  
         
-
-       
-
-        
-       // this.transparentScene.add(light);
-       
         const loader = new THREE.TextureLoader();
         loader.load(normalMap, (tex)=>{
-            this.refractionMaterial.uniforms.normalMap.value = tex;
-            pbrGlassMat.normalMap = tex;
+            this.dispatchEvent({type:"NormalMapLoaded", message:tex})
         })
+
         //this.background = new THREE.Color('red');
         const texture = loader.load(
             skybox,
             () => {
               texture.mapping = THREE.EquirectangularReflectionMapping;
-              //texture.colorSpace = THREE.SRGBColorSpace;
               self.background = texture;
               self.environment = texture;
               self.transparentScene.environment = texture;
-            
             });
         
         this.webcamFeed = document.createElement('video');
         this.webcamFeed.style.display = "none";
         document.body.appendChild(this.webcamFeed);
-        this.initStandaloneGUI();
     }
-    webcamFeed: HTMLVideoElement;
+
+    initRefractionEffect(){
+        let material = new THREE.ShaderMaterial({
+            vertexShader: refractionVS,
+            fragmentShader: refractionFS,
+            uniforms: {
+                map: {value:this.copyRenderTarget.texture},
+                normalMap: {value:null},
+                refractionIndexR: {value:-1},
+                refractionIndexG: {value:-1},
+                refractionIndexB: {value:-1},
+                strength: {value:0.3},
+                normalMapStrength: {value:0.0},
+                tint: {value:new THREE.Color('white')},
+            },
+            depthWrite:false
+        })
+
+        let geo = new THREE.SphereGeometry(1);
+        geo.computeTangents();
+        let sphere = new THREE.Mesh(geo, material);
+        this.refractionGroup.add(sphere);
+
+        this.addEventListener('NormalMapLoaded', (evt)=>{
+            material.uniforms.normalMap.value = evt.message;
+        });
+
+        let gem = null;
+        this.addEventListener('GltfLoaded', (evt)=>{
+            let gltf = evt.message as GLTF;
+            let clone = gltf.scene.clone();
+
+            gem = clone;
+            this.refractionGroup.add(gem);
+
+            if(sphere.visible){
+                gem.visible = false;
+            }
+
+            clone.traverse((child)=>{
+                if(child instanceof THREE.Mesh)
+                {
+                    (child.geometry as THREE.BufferGeometry).computeTangents();
+                    child.material = material; 
+                }
+            });
+        });
+
+        this.addEventListener('SwapModel', ()=>{
+            gem.visible = sphere.visible;
+            sphere.visible = !sphere.visible;
+        });
+
+        if(this.gui){
+            let refractionProps = this.gui.addFolder('Refraction Settings');
+            refractionProps.add(material.uniforms.refractionIndexR, "value",-1,1,0.01).name("R Refraction");
+            refractionProps.add(material.uniforms.refractionIndexG, "value",-1,1,0.01).name("G Refraction");
+            refractionProps.add(material.uniforms.refractionIndexB, "value",-1,1,0.01).name("B Refraction");
+            refractionProps.add(material.uniforms.strength, "value",-2,2,0.01).name("Strength");  
+            refractionProps.add(material.uniforms.normalMapStrength, "value",-2,2,0.01).name("Normal Map Strength");
+            refractionProps.add(this, "changeModel");
+            let tint = refractionProps.addColor(this, 'tempColor');
+            tint.onChange(()=>{
+                material.uniforms.tint.value = new THREE.Color(this.tempColor);
+                material.needsUpdate = true;
+            });
+        }
+    }
+
+    initGlassEffect(){
+        let material = new THREE.MeshPhysicalMaterial({
+            transparent:true,
+            color: new THREE.Color('#FFFFFF'),
+            opacity: 0.03,
+            metalness: 1.0,
+            roughness:0.0,
+            normalScale:new THREE.Vector2(0.1,0.1)
+        })
+
+        let geo = new THREE.SphereGeometry(1);
+        geo.computeTangents();
+
+        let sphere = new THREE.Mesh(geo, material);
+        this.transparentScene.add(sphere);
+
+        this.addEventListener('NormalMapLoaded', (evt)=>{
+            material.normalMap = evt.message;
+        });
+
+        let gem = null;
+        this.addEventListener('GltfLoaded', (evt)=>{
+            let gltf = evt.message as GLTF;
+            let clone = gltf.scene.clone();
+            gem = clone;
+            this.transparentScene.add(clone);
+
+            if(sphere.visible){
+                clone.visible = false;
+            }
+
+            clone.traverse((child)=>{
+                if(child instanceof THREE.Mesh)
+                {
+                    (child.geometry as THREE.BufferGeometry).computeTangents();
+                    child.material = material; 
+                }
+            });
+        });
+
+        this.addEventListener('SwapModel', ()=>{
+            gem.visible = sphere.visible;
+            sphere.visible = !sphere.visible;
+        });
+
+        if(this.gui){
+            let folder = this.gui.addFolder('TransparencySettings');
+            folder.add(material,"opacity");
+        }
+    }
 
     update(){
         this.orbitals.update();
         this.camera.updateProjectionMatrix();
-
-        this.backfaceNormalsScene.background = new THREE.Color('red');
-        this.renderer.setRenderTarget(this.backfaceNormalRenderTarget);
-        this.renderer.render(this.backfaceNormalsScene, this.camera);
 
         this.renderer.setRenderTarget(this.sceneRenderTarget);
         this.renderer.render(this, this.camera);
@@ -231,8 +247,6 @@ export default class RefractionScene extends SceneBase{
         this.blitter.copyToActiveRenderTarget(this.sceneRenderTarget.texture, this.renderer, this.camera);
 
         this.renderer.autoClear = true;
-
-
     }
 
     initWebcam()
@@ -255,8 +269,9 @@ export default class RefractionScene extends SceneBase{
 
     changeModel()
     {
-        this.gltf.visible = this.sphere.visible;
-        this.sphere.visible = !this.sphere.visible;
+        this.dispatchEvent({type:'SwapModel'})
+        //this.gltf.visible = this.sphere.visible;
+        //this.sphere.visible = !this.sphere.visible;
     }
 
     addWindowResizing()
@@ -273,26 +288,18 @@ export default class RefractionScene extends SceneBase{
             self.sceneRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
             self.copyRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
             self.backfaceNormalRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height, {generateMipmaps:true});
-            self.refractionMaterial.uniforms.map.value = self.copyRenderTarget.texture;   
-            self.refractionMaterial.uniforms.backfaceNormals.value = self.backfaceNormalRenderTarget.texture;   
+
+            self.dispatchEvent({type:'RefreshRTMaterials'});
+            //self.refractionMaterial.uniforms.map.value = self.copyRenderTarget.texture;   
+            //self.refractionMaterial.uniforms.backfaceNormals.value = self.backfaceNormalRenderTarget.texture;   
         }
     }
 
     tempColor:string = "#FFFFFF";
     initStandaloneGUI(){
         this.gui = new GUI();  
-        this.gui.add(this.refractionMaterial.uniforms.refractionIndex, "value",-1,1,0.01).name("Refraction index");
-        this.gui.add(this.refractionMaterial.uniforms.refractionIndexR, "value",-1,1,0.01).name("R Refraction");
-        this.gui.add(this.refractionMaterial.uniforms.refractionIndexG, "value",-1,1,0.01).name("G Refraction");
-        this.gui.add(this.refractionMaterial.uniforms.refractionIndexB, "value",-1,1,0.01).name("B Refraction");
-        this.gui.add(this.refractionMaterial.uniforms.strength, "value").name("Strength");  
-        this.gui.add(this.refractionMaterial.uniforms.normalMapStrength, "value").name("Normal Map Strength");
-        this.gui.add(this, "changeModel");
-        let tint = this.gui.addColor(this, 'tempColor');
-        tint.onChange(()=>{
-            this.refractionMaterial.uniforms.tint.value = new THREE.Color(this.tempColor);
-            this.refractionMaterial.needsUpdate = true;
-        });
+        //this.gui.add(this.refractionMaterial.uniforms.refractionIndex, "value",-1,1,0.01).name("Refraction index");
+        
         // brushColor.onChange(()=>{
         //     this.paintableTexture.SetColor(this.paintableTexture.brushColor);
         // });
