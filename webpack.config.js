@@ -33,7 +33,8 @@ module.exports = {
     },
     output: {
       filename: 'bundle.[contenthash].js',
-      path: path.resolve(__dirname, 'dist'),
+      path: path.resolve('D:/_Projects/Github.io/kristian-dixon.github.io/Extra/ThreeJS'),
+      clean:true
     },
     plugins: [new HtmlWebpackPlugin({
         template: "./index.html",

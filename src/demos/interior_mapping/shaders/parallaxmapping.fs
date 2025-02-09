@@ -41,7 +41,7 @@ vec3 ParralaxMap(){
 #endif
 
     //return textureCube(tCube, vec3(-pos.z, pos.y * 1.5, pos.x)).rgb;
-    return textureCube(tCube, vec3(pos.z, pos.y, -pos.x)).rgb;
+    return textureCube(tCube, vec3(-pos.x, pos.y, -pos.z)).rgb;
     
 
     //return textureCube(tCube, pos).rgb;

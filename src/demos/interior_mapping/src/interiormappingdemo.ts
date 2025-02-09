@@ -6,12 +6,12 @@ import VertexShader from "../shaders/parallaxmapping.vs";
 import FragmentShader from "../shaders/parallaxmapping.fs";
 
 
-import CubeMap_nx from "../textures/Room/nz.png";
+import CubeMap_nx from "../textures/Room2/nx.png";
 import CubeMap_ny from "../textures/Room/ny.png";
-import CubeMap_pz from "../textures/Room/px.png";
-import CubeMap_px from "../textures/Room/pz.png";
+import CubeMap_pz from "../textures/Room/pz.png";
+import CubeMap_px from "../textures/Room/px.png";
 import CubeMap_py from "../textures/Room/py.png";
-import CubeMap_nz from "../textures/Room/nx.png";
+import CubeMap_nz from "../textures/Room2/nz.png";
 
 import ExteriorCubeMap_nx from "../textures/NightTownCubemap/nx.png";
 import ExteriorCubeMap_ny from "../textures/NightTownCubemap/ny.png";
@@ -35,7 +35,7 @@ export default class InteriorMappingScene extends SceneBase{
     
 
     // A dat.gui class debugger that is added by default
-    debugger: GUI = null;
+    gui: GUI = null;
 
     // Setups a scene camera
     camera: THREE.PerspectiveCamera = null;
@@ -96,7 +96,14 @@ export default class InteriorMappingScene extends SceneBase{
         let self = this;
         let p = ""
 
-        let interiorMap = new THREE.CubeTextureLoader().load([CubeMap_px, CubeMap_nx, CubeMap_py, CubeMap_ny, CubeMap_pz, CubeMap_nz])
+        let px = CubeMap_px;
+        let nx = CubeMap_nx;
+        let py = CubeMap_py;
+        let ny = CubeMap_ny;
+        let pz = CubeMap_pz;
+        let nz = CubeMap_nz;
+
+        let interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz])
         let exteriorMap = new THREE.CubeTextureLoader().load([ExteriorCubeMap_px, ExteriorCubeMap_nx, ExteriorCubeMap_py, ExteriorCubeMap_ny, ExteriorCubeMap_pz, ExteriorCubeMap_nz]);
         this.background = exteriorMap;
         this.environment = exteriorMap;
@@ -134,15 +141,15 @@ export default class InteriorMappingScene extends SceneBase{
 
         // setup Debugger
         if (debug) {
-            this.debugger =  new GUI();
+            this.gui =  new GUI();
 
             // Add camera to debugger
-            const cameraGroup = this.debugger.addFolder('Camera');
+            const cameraGroup = this.gui.addFolder('Camera');
             cameraGroup.add(this.camera, 'fov', 20, 80);
             cameraGroup.add(this.camera, 'zoom', 0, 1);
             cameraGroup.open();
 
-            const materialSettingsGroup = this.debugger.addFolder("Material Properties");
+            const materialSettingsGroup = this.gui.addFolder("Material Properties");
             const uvScaleGroup = materialSettingsGroup.addFolder("UV Scale");
             uvScaleGroup.add(this.material.uniforms["uvScale"].value, "x");
             uvScaleGroup.add(this.material.uniforms["uvScale"].value, "y");
@@ -162,7 +169,101 @@ export default class InteriorMappingScene extends SceneBase{
             // cubeGroup.add(cube.position, 'z', -10, 10);
             // cubeGroup.open();
 
-            materialSettingsGroup.add(this.material.defines,"OUTPUT_RED");
+            let textureUploaderFwd = document.createElement("input")
+            textureUploaderFwd.type = "file" 
+            textureUploaderFwd.accept = ".png"
+            textureUploaderFwd.style.visibility="hidden";
+            textureUploaderFwd.addEventListener("change", (evt)=>{
+                var userImageURL = URL.createObjectURL( textureUploaderFwd.files[0] );
+            
+                //this.loadTexture(userImageURL);
+
+                nx = userImageURL;
+                interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz]);
+                
+                this.material.uniforms["tCube"].value = interiorMap;
+            })
+
+            let textureUploaderLeft = document.createElement("input")
+            textureUploaderLeft.type = "file" 
+            textureUploaderLeft.accept = ".png"
+            textureUploaderLeft.style.visibility="hidden";
+            textureUploaderLeft.addEventListener("change", (evt)=>{
+                var userImageURL = URL.createObjectURL( textureUploaderLeft.files[0] );
+            
+                //this.loadTexture(userImageURL);
+
+                nz = userImageURL;
+                interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz]);
+                
+                this.material.uniforms["tCube"].value = interiorMap;
+            })
+
+            let textureUploaderRight = document.createElement("input")
+            textureUploaderRight.type = "file" 
+            textureUploaderRight.accept = ".png"
+            textureUploaderRight.style.visibility="hidden";
+            textureUploaderRight.addEventListener("change", (evt)=>{
+                var userImageURL = URL.createObjectURL( textureUploaderRight.files[0] );
+                pz = userImageURL;
+                interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz]);
+                this.material.uniforms["tCube"].value = interiorMap;
+            })
+
+            let textureUploaderTop = document.createElement("input")
+            textureUploaderTop.type = "file" 
+            textureUploaderTop.accept = ".png"
+            textureUploaderTop.style.visibility="hidden";
+            textureUploaderTop.addEventListener("change", (evt)=>{
+                var userImageURL = URL.createObjectURL( textureUploaderTop.files[0] );
+                py = userImageURL;
+                interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz]);
+                this.material.uniforms["tCube"].value = interiorMap;
+            })
+
+            let textureUploaderBottom = document.createElement("input")
+            textureUploaderBottom.type = "file" 
+            textureUploaderBottom.accept = ".png"
+            textureUploaderBottom.style.visibility="hidden";
+            textureUploaderBottom.addEventListener("change", (evt)=>{
+                var userImageURL = URL.createObjectURL( textureUploaderBottom.files[0] );
+                ny = userImageURL;
+                interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz]);
+                this.material.uniforms["tCube"].value = interiorMap;
+            })
+    
+            let buttonsFuncs = {
+                textureImporterFwd:function(){
+                    textureUploaderFwd.click();
+                },
+
+                textureImporterLeft:function(){
+                    textureUploaderLeft.click();
+                },
+
+                textureImporterRight:function(){
+                    textureUploaderRight.click();
+                },
+
+                textureImporterTop:function(){
+                    textureUploaderTop.click();
+                },
+                textureImporterBottom:function(){
+                    textureUploaderBottom.click();
+                }
+            }
+            
+            this.gui.add(buttonsFuncs, "textureImporterFwd").name("Load Front Texture");
+            this.gui.add(buttonsFuncs, "textureImporterLeft").name("Load Left Texture");
+            this.gui.add(buttonsFuncs, "textureImporterRight").name("Load Right Texture");
+            this.gui.add(buttonsFuncs, "textureImporterTop").name("Load Top Texture");
+            this.gui.add(buttonsFuncs, "textureImporterBottom").name("Load Bottom Texture");
+            //this.gui.add(buttonsFuncs, "textureImporterRight").name("Load Right Texture");
+            
+
+
+
+            //materialSettingsGroup.add(this.material.defines,"OUTPUT_RED");
         }
     }
 
@@ -243,6 +344,16 @@ export default class InteriorMappingScene extends SceneBase{
         this[call](args);
     }
 
+
+    loadTexture(uri:string): THREE.Texture
+    {
+        var loader = new THREE.TextureLoader();
+        loader.setCrossOrigin("");
+        let tex = loader.load(uri); 
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        return tex;
+    }
 
     /**
      * Given a ThreeJS camera and renderer, resizes the scene if the
