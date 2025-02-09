@@ -6,14 +6,25 @@ import VertexShader from "../shaders/parallaxmapping.vs";
 import FragmentShader from "../shaders/parallaxmapping.fs";
 
 
-import CubeMap_nx from "../textures/CubeMapClouds/nx.png";
-import CubeMap_ny from "../textures/CubeMapClouds/ny.png";
-import CubeMap_pz from "../textures/CubeMapClouds/nz.png";
-import CubeMap_px from "../textures/CubeMapClouds/px.png";
-import CubeMap_py from "../textures/CubeMapClouds/py.png";
-import CubeMap_nz from "../textures/CubeMapClouds/pz.png";
+import CubeMap_nx from "../textures/Room/nz.png";
+import CubeMap_ny from "../textures/Room/ny.png";
+import CubeMap_pz from "../textures/Room/px.png";
+import CubeMap_px from "../textures/Room/pz.png";
+import CubeMap_py from "../textures/Room/py.png";
+import CubeMap_nz from "../textures/Room/nx.png";
+
+import ExteriorCubeMap_nx from "../textures/NightTownCubemap/nx.png";
+import ExteriorCubeMap_ny from "../textures/NightTownCubemap/ny.png";
+import ExteriorCubeMap_pz from "../textures/NightTownCubemap/pz.png";
+import ExteriorCubeMap_px from "../textures/NightTownCubemap/px.png";
+import ExteriorCubeMap_py from "../textures/NightTownCubemap/py.png";
+import ExteriorCubeMap_nz from "../textures/NightTownCubemap/nz.png";
 
 import SceneBase from '../../../SceneBase';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+
+
+import Model from '../../whiteboard/models/window.glb'
 
 /**
  * A class to set up some basic scene elements to minimize code in the
@@ -49,10 +60,16 @@ export default class InteriorMappingScene extends SceneBase{
     initialize(debug: boolean = true, addGridHelper: boolean = true){
         // setup camera
         this.camera = new THREE.PerspectiveCamera(35, this.width / this.height, .1, 100);
-        this.camera.position.z = 4;
+        this.camera.position.z = 0;
         this.camera.position.y = 0;
-        this.camera.position.x = 0;
+        this.camera.position.x = 4;
         this.camera.lookAt(0,0.5,0);
+
+        const light = new THREE.DirectionalLight(0xffffff,2);
+        light.position.set(4, 10, 10);
+        this.add(light);
+        this.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
+
         // setup renderer
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById("app") as HTMLCanvasElement,
@@ -66,18 +83,10 @@ export default class InteriorMappingScene extends SceneBase{
         // sets up the camera's orbital controls
         this.orbitals = new OrbitControls(this.camera, this.renderer.domElement)
 
-        // Adds an origin-centered grid for visual reference
-        if (addGridHelper){
-
-            // Adds a grid
-            this.add(new THREE.GridHelper(10, 10, 'red'));
-
-            // Adds an axis-helper
-            this.add(new THREE.AxesHelper(3))
-        }
+       
 
         // set the background color
-        this.background = new THREE.Color(0x884422);
+        this.background = new THREE.Color(0x010408);
 
         // Creates the geometry + materials
         const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -87,16 +96,20 @@ export default class InteriorMappingScene extends SceneBase{
         let self = this;
         let p = ""
 
-        let cubemap = new THREE.CubeTextureLoader().load([CubeMap_px, CubeMap_nx, CubeMap_py, CubeMap_ny, CubeMap_pz, CubeMap_nz])
+        let interiorMap = new THREE.CubeTextureLoader().load([CubeMap_px, CubeMap_nx, CubeMap_py, CubeMap_ny, CubeMap_pz, CubeMap_nz])
+        let exteriorMap = new THREE.CubeTextureLoader().load([ExteriorCubeMap_px, ExteriorCubeMap_nx, ExteriorCubeMap_py, ExteriorCubeMap_ny, ExteriorCubeMap_pz, ExteriorCubeMap_nz]);
+        this.background = exteriorMap;
+        this.environment = exteriorMap;
 
-       
+
         this.material = new THREE.ShaderMaterial({
             uniforms:{
                 time: {value:1.0},
                 ZOffset: {value: -1.0},
-                tCube: { value: cubemap },
-                uvScale: {value: new THREE.Vector2(1,1)},
-                uvOffset: {value: new THREE.Vector2(0,0)}
+                tCube: { value: interiorMap },
+                reflectCube: { value: exteriorMap },
+                uvScale: {value: new THREE.Vector2(3,3)},
+                uvOffset: {value: new THREE.Vector2(1,1)}
                 //value: new THREE.TextureLoader().load(Img)}
             },
             vertexShader: VertexShader,
@@ -106,11 +119,19 @@ export default class InteriorMappingScene extends SceneBase{
             }
         })
 
+        
+      
+
         let cube = new THREE.Mesh(geometry, this.material);
         //cube.position.y = .5;
         // add to scene
-        this.add(cube);
-        this.cube = cube;
+        //this.add(cube);
+        //this.cube = cube;
+
+
+        this.loadModel(Model)
+
+
         // setup Debugger
         if (debug) {
             this.debugger =  new GUI();
@@ -143,6 +164,38 @@ export default class InteriorMappingScene extends SceneBase{
 
             materialSettingsGroup.add(this.material.defines,"OUTPUT_RED");
         }
+    }
+
+    loadModel(model:any){
+        let self = this;
+
+        let gltfLoader = new GLTFLoader();
+        gltfLoader.load(model, (gltf)=>{
+            let bounds = new THREE.Box3().setFromObject(gltf.scene);
+            let boundsSize = bounds.getSize(new THREE.Vector3())
+            let scale = 3.0/Math.max(boundsSize.x, boundsSize.y, boundsSize.z);
+
+            let center = bounds.getCenter(new THREE.Vector3());
+            center = center.multiplyScalar(-scale);
+            
+            gltf.scene.position.copy(center);
+            gltf.scene.rotateY(0)
+
+            gltf.scene.traverse(x=>{
+                if(x instanceof THREE.Mesh){
+                    console.log(x.material);
+                    if(x.material.name == "Window"){
+                        (x.geometry as THREE.BufferGeometry).computeTangents();
+                        x.material = self.material;
+                    }
+                }
+            })
+
+            gltf.scene.scale.set(scale,scale,scale);
+            self.add(gltf.scene);
+
+            
+        })
     }
 
     update(){

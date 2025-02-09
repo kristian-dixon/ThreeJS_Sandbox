@@ -20,7 +20,7 @@ const urlParams = new URLSearchParams(window.location.search);
 let demo = urlParams.get("demo");
 if(!demo)
 {
-    demo = "refraction";
+    demo = "interior_mapping";
 }
 
 scene = new availableScenes[demo]();

@@ -11,6 +11,7 @@ uniform vec2 uvScale;
 
 //uniform sampler2D testTexture;
 uniform samplerCube tCube;
+uniform samplerCube reflectCube;
 
 vec3 ParralaxMap(){
     vec2 uv = (fract((vUv * uvScale) + uvOffset) - vec2(0.5)) * (2.0);
@@ -39,14 +40,25 @@ vec3 ParralaxMap(){
     return vec3(1,0,0);
 #endif
 
-    return textureCube(tCube, pos).rgb;
+    //return textureCube(tCube, vec3(-pos.z, pos.y * 1.5, pos.x)).rgb;
+    return textureCube(tCube, vec3(pos.z, pos.y, -pos.x)).rgb;
+    
+
+    //return textureCube(tCube, pos).rgb;
 }
 
 
 void main()	{
     //Center the Coordinates of the uv
 
-    gl_FragColor = vec4(ParralaxMap(), 1);
+    vec3 refl = reflect(vViewDir, vNormal);
+    refl = vec3(-refl.z, refl.y, -refl.x);
+
+    gl_FragColor = vec4(ParralaxMap() , 1) + textureCube(reflectCube, refl.xyz ) * 0.3;
+
+
+
+
     //gl_FragColor = vec4(vBinormal, 1.0);
     return;
 
