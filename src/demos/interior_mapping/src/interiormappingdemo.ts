@@ -177,9 +177,9 @@ export default class InteriorMappingScene extends SceneBase{
             uvOffsetGroup.add(this.material.uniforms["uvOffset"].value, "x");
             uvOffsetGroup.add(this.material.uniforms["uvOffset"].value, "y");
 
-            materialSettingsGroup.add(this.material.uniforms['reflBias'], 'value', -5,5, 0.01).name('Bias');
-            materialSettingsGroup.add(this.material.uniforms['reflScale'], 'value');
-            materialSettingsGroup.add(this.material.uniforms['reflPower'], 'value');
+            materialSettingsGroup.add(this.material.uniforms['reflBias'], 'value', -1,1, 0.01).name('Fresnel Bias');
+            materialSettingsGroup.add(this.material.uniforms['reflScale'], 'value', -10,10, 0.01).name('Fresnel Scale');
+            materialSettingsGroup.add(this.material.uniforms['reflPower'], 'value', -10,10, 0.01).name('Fresnel Power');
 
             let roomDepthSetting = materialSettingsGroup.add(this.material.uniforms["ZOffset"], "value", -10, 1, 0.01);
             roomDepthSetting.name("Depth");
