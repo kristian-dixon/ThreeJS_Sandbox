@@ -9,9 +9,13 @@ uniform float ZOffset;
 uniform vec2 uvOffset;
 uniform vec2 uvScale;
 
+uniform float reflBias;
+uniform float reflScale;
+uniform float reflPower;
+
 //uniform sampler2D testTexture;
-uniform samplerCube tCube;
 uniform samplerCube reflectCube;
+uniform samplerCube tCube;
 
 vec3 ParralaxMap(){
     vec2 uv = (fract((vUv * uvScale) + uvOffset) - vec2(0.5)) * (2.0);
@@ -52,19 +56,18 @@ void main()	{
     //Center the Coordinates of the uv
 
     vec3 refl = reflect(vViewDir, vNormal);
-    refl = vec3(-refl.z, refl.y, -refl.x);
+    refl = vec3(refl.z, refl.y, -refl.x);
 
-    gl_FragColor = vec4(ParralaxMap() , 1) + textureCube(reflectCube, refl.xyz ) * 0.3;
+    float reflectionStrength = (reflBias + reflScale * pow(dot(normalize(vViewDir), normalize(vTangent)), reflPower));
+    reflectionStrength = clamp(reflectionStrength, 0.0,1.0);
+
+    vec3 outputCol = mix(textureCube(reflectCube, refl.xyz).rgb , ParralaxMap(), reflectionStrength);
+    gl_FragColor = vec4(outputCol,1.0);//textureCube(reflectCube, normalize(refl.xyz)).rgb * 1.0, 1.0);
+    //gl_FragColor = vec4(vViewDir,1.0);//textureCube(reflectCube, normalize(refl.xyz)).rgb * 1.0, 1.0);
 
 
+    
 
-
-    //gl_FragColor = vec4(vBinormal, 1.0);
+   
     return;
-
-
-
-    //gl_FragColor = textureCube(tCube, vDir); //vec4(vNormal, 1); //texture2D(testTexture, vUv);
-
-    //gl_FragColor = texture2D(testTexture, vUv);
 }

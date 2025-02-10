@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {GUI} from 'dat.gui';
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
+import {RGBELoader} from "three/examples/jsm/loaders/RGBELoader"
 
 import VertexShader from "../shaders/parallaxmapping.vs";
 import FragmentShader from "../shaders/parallaxmapping.fs";
@@ -19,6 +20,7 @@ import ExteriorCubeMap_pz from "../textures/NightTownCubemap/pz.png";
 import ExteriorCubeMap_px from "../textures/NightTownCubemap/px.png";
 import ExteriorCubeMap_py from "../textures/NightTownCubemap/py.png";
 import ExteriorCubeMap_nz from "../textures/NightTownCubemap/nz.png";
+import EnvironmentMap from "../textures/test_hdr_map.hdr";
 
 import SceneBase from '../../../SceneBase';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -105,18 +107,24 @@ export default class InteriorMappingScene extends SceneBase{
 
         let interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz])
         let exteriorMap = new THREE.CubeTextureLoader().load([ExteriorCubeMap_px, ExteriorCubeMap_nx, ExteriorCubeMap_py, ExteriorCubeMap_ny, ExteriorCubeMap_pz, ExteriorCubeMap_nz]);
-        this.background = exteriorMap;
-        this.environment = exteriorMap;
+        
+        
 
+        //this.background = interiorMap;
+        //this.environment = interiorMap;
+        this.background = new THREE.Color(1,0,0)
 
         this.material = new THREE.ShaderMaterial({
             uniforms:{
                 time: {value:1.0},
                 ZOffset: {value: -1.0},
                 tCube: { value: interiorMap },
-                reflectCube: { value: exteriorMap },
+                reflectCube: { value: null },
                 uvScale: {value: new THREE.Vector2(3,3)},
-                uvOffset: {value: new THREE.Vector2(1,1)}
+                uvOffset: {value: new THREE.Vector2(1,1)},
+                reflBias: {value: 0.0},
+                reflScale: {value: 1.0},
+                reflPower: {value: 2.0},
                 //value: new THREE.TextureLoader().load(Img)}
             },
             vertexShader: VertexShader,
@@ -127,6 +135,17 @@ export default class InteriorMappingScene extends SceneBase{
         })
 
         
+        let hdri = new RGBELoader().load(EnvironmentMap, (tex)=>{
+            hdri.mapping = THREE.EquirectangularReflectionMapping
+            this.background = hdri;
+            this.environment = hdri;
+
+            this.material.uniforms["reflectCube"].value = hdri;
+
+           
+           
+            
+        })
       
 
         let cube = new THREE.Mesh(geometry, this.material);
@@ -158,6 +177,9 @@ export default class InteriorMappingScene extends SceneBase{
             uvOffsetGroup.add(this.material.uniforms["uvOffset"].value, "x");
             uvOffsetGroup.add(this.material.uniforms["uvOffset"].value, "y");
 
+            materialSettingsGroup.add(this.material.uniforms['reflBias'], 'value', -5,5, 0.01).name('Bias');
+            materialSettingsGroup.add(this.material.uniforms['reflScale'], 'value');
+            materialSettingsGroup.add(this.material.uniforms['reflPower'], 'value');
 
             let roomDepthSetting = materialSettingsGroup.add(this.material.uniforms["ZOffset"], "value", -10, 1, 0.01);
             roomDepthSetting.name("Depth");
