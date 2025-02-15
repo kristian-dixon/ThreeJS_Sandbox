@@ -131,7 +131,7 @@ export default class InteriorMappingScene extends SceneBase{
             vertexShader: VertexShader,
             fragmentShader:FragmentShader,
             defines:{
-                OUTPUT_RED: false
+                TINT_TEXTURE: false
             }
         })
 
@@ -193,6 +193,10 @@ export default class InteriorMappingScene extends SceneBase{
 
             materialSettingsGroup.add(this.material.uniforms['displacementStrength'], 'value', 0.0,1.0, 0.01).name('Window Distortion Strength');
             materialSettingsGroup.add(this.material.uniforms['displacementScale'], 'value', 0.0,10.0, 0.01).name('Window Distortion Texture Scale');
+            
+            materialSettingsGroup.add(this.material.defines, 'TINT_TEXTURE').name('Stained Glass Mode');
+
+            
 
             let roomDepthSetting = materialSettingsGroup.add(this.material.uniforms["ZOffset"], "value", -10, 1, 0.01);
             roomDepthSetting.name("Depth");
@@ -315,7 +319,8 @@ export default class InteriorMappingScene extends SceneBase{
             center = center.multiplyScalar(-scale);
             
             gltf.scene.position.copy(center);
-            gltf.scene.rotateY(0)
+            
+           
 
             gltf.scene.traverse(x=>{
                 if(x instanceof THREE.Mesh){

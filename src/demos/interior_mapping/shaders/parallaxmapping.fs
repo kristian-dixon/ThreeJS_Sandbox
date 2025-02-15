@@ -22,33 +22,27 @@ uniform sampler2D stainedGlass;
 uniform float displacementStrength;
 uniform float displacementScale;
 
-vec3 ParralaxMap(){
+vec3 ParralaxMap(vec3 viewDir){
     vec2 uv = (fract((vUv * uvScale) + uvOffset) - vec2(0.5)) * (2.0);
 
     vec3 pos = vec3(uv, ZOffset);
 
-    vec3 noise = (texture2D(dispTex, vUv * displacementScale).xyz * 2.0 - 1.0) * displacementStrength;
     //Get how much along each axis we need to travel along the view direction to intersect with
     //an axis aligned voxel grid.
-    vec3 invDir = 1.0 / normalize(vViewDir + noise);
+    vec3 invDir = 1.0 / viewDir;
     vec3 viewSign = sign(invDir);
 
     //Figure out where we actually are in this voxel grid based on the resolved position
     vec3 distToAxisBorder = abs(invDir) - pos * invDir;
     //Get closest intersection with border
     float dist = min(distToAxisBorder.x, min(distToAxisBorder.y, distToAxisBorder.z));
-    pos += normalize(vViewDir + noise) * dist;
+    pos += viewDir * dist;
 
     pos = vec3(
         dot(vTangent, pos),
         dot(vBinormal, pos),
         dot(vNormal, pos)
     );
-
-
-#ifdef OUTPUT_RED
-    return vec3(1,0,0);
-#endif
 
     //return textureCube(tCube, vec3(-pos.z, pos.y * 1.5, pos.x)).rgb;
     return textureCube(tCube, vec3(-pos.x, pos.y, -pos.z)).rgb;
@@ -58,20 +52,20 @@ vec3 ParralaxMap(){
 }
 
 
-void main()	{
-    //Center the Coordinates of the uv
-    
-    vec3 noise = (texture2D(dispTex, vUv * displacementScale).rgb * 2.0 - 1.0) * displacementStrength;
+void main()	{ 
+    vec3 viewDir = vViewDir;
 
-    
+    vec3 normalMap = (texture2D(dispTex, vUv * displacementScale).rgb * 2.0 - 1.0) * displacementStrength;
+    viewDir = normalize(viewDir + normalMap);
 
-    vec3 refl = reflect(vViewDir, vNormal);
+
+    vec3 refl = reflect(viewDir, vNormal);
     refl = vec3(refl.z, refl.y, -refl.x);
 
-    float reflectionStrength = (reflBias + reflScale * pow(dot(normalize(vViewDir), normalize(vTangent)), reflPower));
+    float reflectionStrength = (reflBias + reflScale * pow(dot(normalize(viewDir), normalize(vTangent)), reflPower));
     reflectionStrength = clamp(reflectionStrength, 0.0,1.0);
 
-    vec3 outputCol = mix(textureCube(reflectCube, refl.xyz + noise.xyz).rgb, ParralaxMap() * 2.0, reflectionStrength);
+    vec3 outputCol = mix(textureCube(reflectCube, refl.xyz).rgb, ParralaxMap(viewDir) * 2.0, reflectionStrength);
     
     
     #ifdef TINT_TEXTURE
