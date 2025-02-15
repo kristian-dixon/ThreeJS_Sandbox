@@ -14,19 +14,16 @@ import CubeMap_px from "../textures/Room/px.png";
 import CubeMap_py from "../textures/Room/py.png";
 import CubeMap_nz from "../textures/Room2/nz.png";
 
-import ExteriorCubeMap_nx from "../textures/NightTownCubemap/nx.png";
-import ExteriorCubeMap_ny from "../textures/NightTownCubemap/ny.png";
-import ExteriorCubeMap_pz from "../textures/NightTownCubemap/pz.png";
-import ExteriorCubeMap_px from "../textures/NightTownCubemap/px.png";
-import ExteriorCubeMap_py from "../textures/NightTownCubemap/py.png";
-import ExteriorCubeMap_nz from "../textures/NightTownCubemap/nz.png";
-import EnvironmentMap from "../textures/test_hdr_map.hdr";
+import EnvironmentMap from "../textures/medieval_cafe_1k.hdr";
 
 import SceneBase from '../../../SceneBase';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 
 import Model from '../../whiteboard/models/window.glb'
+
+import DisplacementTex from '../../../shared/textures/bumpyNormalMap.jpg'
+import StainedGlassTexture from '../textures/AndiWater.jpg'
 
 /**
  * A class to set up some basic scene elements to minimize code in the
@@ -67,10 +64,10 @@ export default class InteriorMappingScene extends SceneBase{
         this.camera.position.x = 4;
         this.camera.lookAt(0,0.5,0);
 
-        const light = new THREE.DirectionalLight(0xffffff,2);
-        light.position.set(4, 10, 10);
-        this.add(light);
-        this.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
+        //const light = new THREE.DirectionalLight(0xffffff,2);
+        //light.position.set(4, 10, 10);
+        //this.add(light);
+        //this.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
 
         // setup renderer
         this.renderer = new THREE.WebGLRenderer({
@@ -88,7 +85,7 @@ export default class InteriorMappingScene extends SceneBase{
        
 
         // set the background color
-        this.background = new THREE.Color(0x010408);
+        //this.background = new THREE.Color(0x010408);
 
         // Creates the geometry + materials
         const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -106,13 +103,13 @@ export default class InteriorMappingScene extends SceneBase{
         let nz = CubeMap_nz;
 
         let interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz])
-        let exteriorMap = new THREE.CubeTextureLoader().load([ExteriorCubeMap_px, ExteriorCubeMap_nx, ExteriorCubeMap_py, ExteriorCubeMap_ny, ExteriorCubeMap_pz, ExteriorCubeMap_nz]);
+        
         
         
 
         //this.background = interiorMap;
         //this.environment = interiorMap;
-        this.background = new THREE.Color(1,0,0)
+        //this.background = new THREE.Color(1,0,0)
 
         this.material = new THREE.ShaderMaterial({
             uniforms:{
@@ -120,11 +117,15 @@ export default class InteriorMappingScene extends SceneBase{
                 ZOffset: {value: -1.0},
                 tCube: { value: interiorMap },
                 reflectCube: { value: null },
+                dispTex: {value:null},
+                stainedGlass : {value:null},
                 uvScale: {value: new THREE.Vector2(3,3)},
                 uvOffset: {value: new THREE.Vector2(1,1)},
                 reflBias: {value: 0.0},
                 reflScale: {value: 1.0},
                 reflPower: {value: 2.0},
+                displacementStrength: {value: 0.1},
+                displacementScale: {value: 5.0}
                 //value: new THREE.TextureLoader().load(Img)}
             },
             vertexShader: VertexShader,
@@ -146,7 +147,16 @@ export default class InteriorMappingScene extends SceneBase{
            
             
         })
+
+        new THREE.TextureLoader().load(DisplacementTex, (tex)=>{
+            this.material.uniforms["dispTex"].value = tex;
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        });
       
+        new THREE.TextureLoader().load(StainedGlassTexture, (tex)=>{
+            this.material.uniforms["stainedGlass"].value = tex;
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        });
 
         let cube = new THREE.Mesh(geometry, this.material);
         //cube.position.y = .5;
@@ -180,6 +190,9 @@ export default class InteriorMappingScene extends SceneBase{
             materialSettingsGroup.add(this.material.uniforms['reflBias'], 'value', -1,1, 0.01).name('Fresnel Bias');
             materialSettingsGroup.add(this.material.uniforms['reflScale'], 'value', -10,10, 0.01).name('Fresnel Scale');
             materialSettingsGroup.add(this.material.uniforms['reflPower'], 'value', -10,10, 0.01).name('Fresnel Power');
+
+            materialSettingsGroup.add(this.material.uniforms['displacementStrength'], 'value', 0.0,1.0, 0.01).name('Window Distortion Strength');
+            materialSettingsGroup.add(this.material.uniforms['displacementScale'], 'value', 0.0,10.0, 0.01).name('Window Distortion Texture Scale');
 
             let roomDepthSetting = materialSettingsGroup.add(this.material.uniforms["ZOffset"], "value", -10, 1, 0.01);
             roomDepthSetting.name("Depth");
