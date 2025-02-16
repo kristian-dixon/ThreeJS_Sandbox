@@ -38,14 +38,15 @@ vec3 ParralaxMap(vec3 viewDir){
     float dist = min(distToAxisBorder.x, min(distToAxisBorder.y, distToAxisBorder.z));
     pos += viewDir * dist;
 
-    pos = vec3(
-        dot(vTangent, pos),
-        dot(vBinormal, pos),
-        dot(vNormal, pos)
-    );
+    //pos = vec3(
+    //    dot(vTangent, pos),
+    //    dot(vBinormal, pos),
+    //    dot(vNormal, pos)
+    //);
+
 
     //return textureCube(tCube, vec3(-pos.z, pos.y * 1.5, pos.x)).rgb;
-    return textureCube(tCube, vec3(-pos.x, pos.y, -pos.z)).rgb;
+    return textureCube(tCube, vec3(pos.z, pos.y, -pos.x)).rgb;
     
 
     //return textureCube(tCube, pos).rgb;
@@ -62,7 +63,7 @@ void main()	{
     vec3 refl = reflect(viewDir, vNormal);
     refl = vec3(refl.z, refl.y, -refl.x);
 
-    float reflectionStrength = (reflBias + reflScale * pow(dot(normalize(viewDir), normalize(vTangent)), reflPower));
+    float reflectionStrength = (reflBias + reflScale * pow(dot(normalize(viewDir), normalize(vec3(0,0,-1))), reflPower));
     reflectionStrength = clamp(reflectionStrength, 0.0,1.0);
 
     vec3 outputCol = mix(textureCube(reflectCube, refl.xyz).rgb, ParralaxMap(viewDir) * 2.0, reflectionStrength);
@@ -74,7 +75,8 @@ void main()	{
         gl_FragColor = vec4(outputCol,1.0);
     #endif
 
-
+   //gl_FragColor =  vec4(ParralaxMap(viewDir),1.0);
+   //gl_FragColor =  vec4((vTangent),1.0);
     
 
    

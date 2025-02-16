@@ -20,7 +20,7 @@ import SceneBase from '../../../SceneBase';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 
-import Model from '../../whiteboard/models/window.glb'
+import Model from '../../whiteboard/models/windows.glb'
 
 import DisplacementTex from '../../../shared/textures/bumpyNormalMap.jpg'
 import StainedGlassTexture from '../textures/AndiWater.jpg'
@@ -114,7 +114,7 @@ export default class InteriorMappingScene extends SceneBase{
         this.material = new THREE.ShaderMaterial({
             uniforms:{
                 time: {value:1.0},
-                ZOffset: {value: -1.0},
+                ZOffset: {value: 1.0},
                 tCube: { value: interiorMap },
                 reflectCube: { value: null },
                 dispTex: {value:null},
