@@ -64,10 +64,10 @@ export default class InteriorMappingScene extends SceneBase{
         this.camera.position.x = 4;
         this.camera.lookAt(0,0.5,0);
 
-        //const light = new THREE.DirectionalLight(0xffffff,2);
-        //light.position.set(4, 10, 10);
-        //this.add(light);
-        //this.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
+       const light = new THREE.DirectionalLight(0xffffff,2);
+       light.position.set(4, 10, 10);
+       this.add(light);
+       this.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
 
         // setup renderer
         this.renderer = new THREE.WebGLRenderer({
@@ -119,8 +119,8 @@ export default class InteriorMappingScene extends SceneBase{
                 reflectCube: { value: null },
                 dispTex: {value:null},
                 stainedGlass : {value:null},
-                uvScale: {value: new THREE.Vector2(3,3)},
-                uvOffset: {value: new THREE.Vector2(1,1)},
+                uvScale: {value: new THREE.Vector2(1,1)},
+                uvOffset: {value: new THREE.Vector2(0,0)},
                 reflBias: {value: 0.0},
                 reflScale: {value: 1.0},
                 reflPower: {value: 2.0},
@@ -151,6 +151,7 @@ export default class InteriorMappingScene extends SceneBase{
         new THREE.TextureLoader().load(DisplacementTex, (tex)=>{
             this.material.uniforms["dispTex"].value = tex;
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.generateMipmaps = false;
         });
       
         new THREE.TextureLoader().load(StainedGlassTexture, (tex)=>{
