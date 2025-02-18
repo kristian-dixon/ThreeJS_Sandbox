@@ -3,6 +3,7 @@ varying vec3 vNormal;
 varying vec3 vTangent;
 varying vec3 vBinormal;
 varying vec3 vViewDir;
+varying vec3 vWsViewDir;
 
 uniform float time;
 uniform float ZOffset;
@@ -18,12 +19,19 @@ uniform samplerCube reflectCube;
 uniform samplerCube tCube;
 uniform sampler2D dispTex;
 uniform sampler2D stainedGlass;
+uniform sampler2D windowPallet;
 
 uniform float displacementStrength;
 uniform float displacementScale;
 
-vec3 ParralaxMap(vec3 viewDir){
-    vec2 uv = (fract((vUv * uvScale) + uvOffset) - vec2(0.5)) * (2.0);
+float random (vec2 st) {
+    return fract(sin(dot(st.xy,
+                         vec2(12.9898,78.233)))*
+        43758.5453123);
+}
+
+vec3 ParralaxMap(vec3 viewDir, float seed){
+    vec2 uv = fract(vUv) * 2.0 - 1.0;//(fract((vUv * uvScale) + uvOffset) - vec2(0.5)) * (2.0);
 
     vec3 pos = vec3(uv, ZOffset);
 
@@ -45,8 +53,15 @@ vec3 ParralaxMap(vec3 viewDir){
     //);
 
 
-    //return textureCube(tCube, vec3(-pos.z, pos.y * 1.5, pos.x)).rgb;
-    return textureCube(tCube, vec3(pos.z, pos.y, -pos.x)).rgb;
+    
+    float rotation = 1.5707 * (floor(fract(seed) * 16.0)/4.0)*4.0;
+    mat3 matrix = mat3(cos(rotation), 0, -sin(rotation),  0, 1, 0, sin(rotation), 0, cos(rotation));
+
+
+
+
+
+    return textureCube(tCube, matrix * vec3(pos.x, pos.y, pos.z)).rgb;
     
 
     //return textureCube(tCube, pos).rgb;
@@ -56,29 +71,31 @@ vec3 ParralaxMap(vec3 viewDir){
 void main()	{ 
     vec3 viewDir = vViewDir;
 
-    vec3 normalMap = (texture2D(dispTex, vUv * displacementScale).rgb * 2.0 - 1.0) * displacementStrength;
+    float seed = random(floor(vUv));
+    vec4 windowSettings = texture2D(windowPallet, vec2(seed, fract(time * -0.05)));
+
+    vec3 normalMap = (texture2D(dispTex, vUv * displacementScale).rgb * 2.0 - 1.0) * displacementStrength * (1.0 - windowSettings.a);
     viewDir = normalize(viewDir + normalMap);
 
 
-    vec3 refl = reflect(viewDir, vNormal);
-    refl = vec3(refl.z, refl.y, -refl.x);
+    vec3 refl = reflect(normalize(vWsViewDir+normalMap), vNormal);
+    //refl = vec3(refl.z, refl.y, -refl.x);
 
     float reflectionStrength = (reflBias + reflScale * pow(dot(normalize(viewDir), normalize(vec3(0,0,-1))), reflPower));
     reflectionStrength = clamp(reflectionStrength, 0.0,1.0);
 
-    vec3 outputCol = mix(textureCube(reflectCube, refl.xyz).rgb, ParralaxMap(viewDir) * 2.0, reflectionStrength);
-    
+    vec3 outputCol = mix(textureCube(reflectCube, refl.xyz).rgb, ParralaxMap(viewDir,seed) * windowSettings.rgb * 2.0, reflectionStrength);
     
     #ifdef TINT_TEXTURE
         gl_FragColor = vec4(outputCol,1.0) * texture2D(stainedGlass, vUv * 3.0);
     #else
-        gl_FragColor = vec4(outputCol,1.0);
+        gl_FragColor = vec4(outputCol,1.0) ;
     #endif
 
    //gl_FragColor =  vec4(ParralaxMap(viewDir),1.0);
    //gl_FragColor =  vec4((vTangent),1.0);
     
-
+    //gl_FragColor = vec4(floor(vUv) / 10.0, 0.0, 1.0);
    
     return;
 }

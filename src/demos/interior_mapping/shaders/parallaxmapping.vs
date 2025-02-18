@@ -3,6 +3,7 @@ varying vec3 vNormal;
 varying vec3 vTangent;
 varying vec3 vBinormal;
 varying vec3 vViewDir;
+varying vec3 vWsViewDir;
 uniform float time;
 
 attribute vec4 tangent;
@@ -14,7 +15,8 @@ void main()	{
     vTangent = normalize((modelMatrix * vec4(tangent.xyz,0.0)).xyz);
     vBinormal = normalize(cross(vNormal, vTangent.xyz) * tangent.w);
 
-    vec3 viewDir = ((modelMatrix * vec4(position,1.0)).xyz - cameraPosition);
+    vec3 viewDir = normalize((modelMatrix * vec4(position,1.0)).xyz - cameraPosition);
+    vWsViewDir = (viewDir);
     vViewDir = vec3(
         dot(viewDir, vTangent),
         dot(viewDir, vBinormal),

@@ -15,6 +15,7 @@ import CubeMap_py from "../textures/Room/py.png";
 import CubeMap_nz from "../textures/Room2/nz.png";
 
 import EnvironmentMap from "../textures/medieval_cafe_1k.hdr";
+import WindowPallet from "../textures/WindowSettingsCyclePallet.png";
 
 import SceneBase from '../../../SceneBase';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -113,7 +114,7 @@ export default class InteriorMappingScene extends SceneBase{
 
         this.material = new THREE.ShaderMaterial({
             uniforms:{
-                time: {value:1.0},
+                time: {value:0.0},
                 ZOffset: {value: 1.0},
                 tCube: { value: interiorMap },
                 reflectCube: { value: null },
@@ -121,11 +122,12 @@ export default class InteriorMappingScene extends SceneBase{
                 stainedGlass : {value:null},
                 uvScale: {value: new THREE.Vector2(1,1)},
                 uvOffset: {value: new THREE.Vector2(0,0)},
-                reflBias: {value: 0.0},
+                reflBias: {value: -0.1},
                 reflScale: {value: 1.0},
                 reflPower: {value: 2.0},
-                displacementStrength: {value: 0.1},
-                displacementScale: {value: 5.0}
+                displacementStrength: {value: 0.33},
+                displacementScale: {value: 0.14},
+                windowPallet: {value:null}
                 //value: new THREE.TextureLoader().load(Img)}
             },
             vertexShader: VertexShader,
@@ -151,7 +153,13 @@ export default class InteriorMappingScene extends SceneBase{
         new THREE.TextureLoader().load(DisplacementTex, (tex)=>{
             this.material.uniforms["dispTex"].value = tex;
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.generateMipmaps = true;
+        });
+        new THREE.TextureLoader().load(WindowPallet, (tex)=>{
+            this.material.uniforms["windowPallet"].value = tex;
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
             tex.generateMipmaps = false;
+            tex.minFilter = tex.magFilter = THREE.NearestFilter;
         });
       
         new THREE.TextureLoader().load(StainedGlassTexture, (tex)=>{
@@ -344,9 +352,9 @@ export default class InteriorMappingScene extends SceneBase{
         this.camera.updateProjectionMatrix();
         this.renderer.render(this, this.camera);
         
+        this.material.uniforms.time.value += 0.016;
         this.material.needsUpdate = true;
         
-
         if(this.cube){
             // this.cube.translateX(0.1)
             //this.cube.rotateY(0.01);
