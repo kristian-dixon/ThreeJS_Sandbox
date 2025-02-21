@@ -17,11 +17,9 @@ void main()	{
 
     vec3 viewDir = normalize((modelMatrix * vec4(position,1.0)).xyz - cameraPosition);
     vWsViewDir = (viewDir);
-    vViewDir = vec3(
-        dot(viewDir, vTangent),
-        dot(viewDir, vBinormal),
-        dot(viewDir, vNormal)
-    );
+
+    mat3 tbn = mat3(vTangent, vBinormal, vNormal);
+    vViewDir = tbn * viewDir;
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0 );
 }

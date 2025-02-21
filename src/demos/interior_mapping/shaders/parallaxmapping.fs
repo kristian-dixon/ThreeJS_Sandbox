@@ -38,7 +38,6 @@ vec3 ParralaxMap(vec3 viewDir, float seed){
     //Get how much along each axis we need to travel along the view direction to intersect with
     //an axis aligned voxel grid.
     vec3 invDir = 1.0 / viewDir;
-    vec3 viewSign = sign(invDir);
 
     //Figure out where we actually are in this voxel grid based on the resolved position
     vec3 distToAxisBorder = abs(invDir) - pos * invDir;
@@ -46,15 +45,15 @@ vec3 ParralaxMap(vec3 viewDir, float seed){
     float dist = min(distToAxisBorder.x, min(distToAxisBorder.y, distToAxisBorder.z));
     pos += viewDir * dist;
 
-    //pos = vec3(
-    //    dot(vTangent, pos),
-    //    dot(vBinormal, pos),
-    //    dot(vNormal, pos)
-    //);
+    pos = vec3(
+     dot(vTangent, pos),
+     dot(vBinormal, pos),
+     dot(vNormal, pos)
+    );
 
 
     
-    float rotation = 1.5707 * (floor(fract(seed) * 16.0)/4.0)*4.0;
+    float rotation = 1.5707 * ((floor(fract(seed) * 16.0)/4.0)*4.0-1.0);
     mat3 matrix = mat3(cos(rotation), 0, -sin(rotation),  0, 1, 0, sin(rotation), 0, cos(rotation));
 
 
@@ -72,19 +71,26 @@ void main()	{
     vec3 viewDir = vViewDir;
 
     float seed = random(floor(vUv));
-    vec4 windowSettings = texture2D(windowPallet, vec2(seed, fract(time * -0.05)));
+
+  
+    vec4 windowSettings = texture2D(windowPallet, vec2(seed, time));
 
     vec3 normalMap = (texture2D(dispTex, vUv * displacementScale).rgb * 2.0 - 1.0) * displacementStrength * (1.0 - windowSettings.a);
     viewDir = normalize(viewDir + normalMap);
 
-
-    vec3 refl = reflect(normalize(vWsViewDir+normalMap), vNormal);
+    vec3 wsViewDir = normalize(vWsViewDir+normalMap);
+    vec3 refl = reflect(wsViewDir, vNormal);
     //refl = vec3(refl.z, refl.y, -refl.x);
 
-    float reflectionStrength = (reflBias + reflScale * pow(dot(normalize(viewDir), normalize(vec3(0,0,-1))), reflPower));
+    float reflectionStrength = (reflBias + reflScale * pow(dot((-wsViewDir), normalize(vNormal)), reflPower));
     reflectionStrength = clamp(reflectionStrength, 0.0,1.0);
 
-    vec3 outputCol = mix(textureCube(reflectCube, refl.xyz).rgb, ParralaxMap(viewDir,seed) * windowSettings.rgb * 2.0, reflectionStrength);
+    //float reflectionBrightness = 1.0 - abs((time - 0.5) * 2.0);
+    
+    vec3 reflectionColour = textureCube(reflectCube, refl.xyz).rgb;// * reflectionBrightness;
+
+
+    vec3 outputCol = mix(reflectionColour, ParralaxMap(viewDir,seed) * max(vec3(0.1,0.1,0.1),windowSettings.rgb) * 2.0, reflectionStrength);
     
     #ifdef TINT_TEXTURE
         gl_FragColor = vec4(outputCol,1.0) * texture2D(stainedGlass, vUv * 3.0);
