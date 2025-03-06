@@ -79,18 +79,13 @@ void main()	{
     viewDir = normalize(viewDir + normalMap);
 
     vec3 wsViewDir = normalize(vWsViewDir+normalMap);
-    vec3 refl = reflect(wsViewDir, vNormal);
-    //refl = vec3(refl.z, refl.y, -refl.x);
-
-    float reflectionStrength = (reflBias + reflScale * pow(dot((-wsViewDir), normalize(vNormal)), reflPower));
-    reflectionStrength = clamp(reflectionStrength, 0.0,1.0);
-
-    //float reflectionBrightness = 1.0 - abs((time - 0.5) * 2.0);
     
-    vec3 reflectionColour = textureCube(reflectCube, refl.xyz).rgb;// * reflectionBrightness;
-
-
-    vec3 outputCol = mix(reflectionColour, ParralaxMap(viewDir,seed) * max(vec3(0.1,0.1,0.1),windowSettings.rgb) * 2.0, reflectionStrength);
+    vec3 refl = reflect(wsViewDir, vNormal);
+    float reflectionStrength = (reflBias + reflScale * pow(dot((-wsViewDir), normalize(vNormal)), reflPower));
+    reflectionStrength = clamp(reflectionStrength, 0.0,1.0); 
+    vec3 reflectionColour = textureCube(reflectCube, refl.xyz).rgb;
+    vec3 interiorColour = ParralaxMap(viewDir,seed);
+    vec3 outputCol = mix(reflectionColour, interiorColour * max(vec3(0.1,0.1,0.1),windowSettings.rgb) * 2.0, reflectionStrength);
     
     #ifdef TINT_TEXTURE
         gl_FragColor = vec4(outputCol,1.0) * texture2D(stainedGlass, vUv * 3.0);

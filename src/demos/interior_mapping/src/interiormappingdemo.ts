@@ -31,19 +31,10 @@ import StainedGlassTexture from '../textures/AndiWater.jpg'
  * main execution file.
  */
 export default class InteriorMappingScene extends SceneBase{
-   
-    
-
-    // A dat.gui class debugger that is added by default
     gui: GUI = null;
-
-    // Setups a scene camera
     camera: THREE.PerspectiveCamera = null;
-
-    // setup renderer
     renderer: THREE.WebGLRenderer = null;
 
-    // setup Orbitals
     orbitals: OrbitControls = null;
 
     material: THREE.ShaderMaterial = null;
@@ -62,9 +53,9 @@ export default class InteriorMappingScene extends SceneBase{
     initialize(debug: boolean = true, addGridHelper: boolean = true){
         // setup camera
         this.camera = new THREE.PerspectiveCamera(35, this.width / this.height, .1, 100);
-        this.camera.position.z = 0;
-        this.camera.position.y = 0;
-        this.camera.position.x = 4;
+        this.camera.position.z = 8;
+        this.camera.position.y = 0.0;
+        this.camera.position.x = 0.0;
         this.camera.lookAt(0,0.5,0);
 
        const light = new THREE.DirectionalLight(0xffffff,2);
@@ -85,18 +76,11 @@ export default class InteriorMappingScene extends SceneBase{
         // sets up the camera's orbital controls
         this.orbitals = new OrbitControls(this.camera, this.renderer.domElement)
 
-       
-
-        // set the background color
-        //this.background = new THREE.Color(0x010408);
 
         // Creates the geometry + materials
         const geometry = new THREE.BoxGeometry(1, 1, 1);
         //const geometry = new THREE.SphereGeometry(0.5);
         geometry.computeTangents();
-
-        let self = this;
-        let p = ""
 
         let px = CubeMap_px;
         let nx = CubeMap_nx;
@@ -188,6 +172,9 @@ export default class InteriorMappingScene extends SceneBase{
         // setup Debugger
         if (debug) {
             this.gui =  new GUI();
+            if(window.top != window.self){
+                this.gui.hide();
+            }
 
             // Add camera to debugger
             const cameraGroup = this.gui.addFolder('Camera');
