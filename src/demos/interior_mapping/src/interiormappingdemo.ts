@@ -44,11 +44,12 @@ export default class InteriorMappingScene extends SceneBase{
     width = window.innerWidth;
     height = window.innerHeight;
 
-    cube: THREE.Mesh;
+    plane: THREE.Mesh;
 
     currentPage = 0;
     group: THREE.Group = new THREE.Group();
 
+    
 
     initialize(debug: boolean = true, addGridHelper: boolean = true){
         // setup camera
@@ -78,7 +79,7 @@ export default class InteriorMappingScene extends SceneBase{
 
 
         // Creates the geometry + materials
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const geometry = new THREE.PlaneGeometry(3,3, 8,8);
         //const geometry = new THREE.SphereGeometry(0.5);
         geometry.computeTangents();
 
@@ -126,6 +127,10 @@ export default class InteriorMappingScene extends SceneBase{
         this.holeMaterial.uniforms.reflBias.value = 1;
         this.holeMaterial.uniforms.displacementScale.value = 0;
 
+        this.plane = new THREE.Mesh(geometry, new THREE.ShaderMaterial().copy(this.material));
+        this.plane.visible = false;
+        this.group.add(this.plane);
+
         let hdri = new RGBELoader().load(EnvironmentMap, (tex)=>{
             hdri.mapping = THREE.EquirectangularReflectionMapping
             this.background = hdri;
@@ -133,6 +138,7 @@ export default class InteriorMappingScene extends SceneBase{
 
             this.material.uniforms["reflectCube"].value = hdri;
             this.holeMaterial.uniforms["reflectCube"].value = hdri;
+            this.plane.material["uniforms"]["reflectCube"].value = hdri;
            
             
         })
@@ -140,12 +146,14 @@ export default class InteriorMappingScene extends SceneBase{
         new THREE.TextureLoader().load(DisplacementTex, (tex)=>{
             this.material.uniforms["dispTex"].value = tex;
             this.holeMaterial.uniforms["dispTex"].value = tex;
+            this.plane.material["uniforms"]["dispTex"].value = tex;
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
             tex.generateMipmaps = true;
         });
         new THREE.TextureLoader().load(WindowPallet, (tex)=>{
             this.material.uniforms["windowPallet"].value = tex;
             this.holeMaterial.uniforms["windowPallet"].value = tex;
+            this.plane.material["uniforms"]["windowPallet"].value = tex;
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
             tex.generateMipmaps = false;
             tex.minFilter = tex.magFilter = THREE.NearestFilter;
@@ -154,20 +162,17 @@ export default class InteriorMappingScene extends SceneBase{
         new THREE.TextureLoader().load(StainedGlassTexture, (tex)=>{
             this.material.uniforms["stainedGlass"].value = tex;
             this.holeMaterial.uniforms["stainedGlass"].value = tex;
+            this.plane.material["uniforms"]["stainedGlass"].value = tex;
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
         });
 
         
 
-        let cube = new THREE.Mesh(geometry, this.material);
-        //cube.position.y = .5;
-        // add to scene
-        //this.add(cube);
-        //this.cube = cube;
+        
 
 
         this.loadModel(Model)
-
+        window["DemoApp"] = this;
 
         // setup Debugger
         if (debug) {
@@ -310,7 +315,7 @@ export default class InteriorMappingScene extends SceneBase{
         }
     }
 
-
+    gltf:THREE.Group;
     loadModel(model:any){
         let self = this;
 
@@ -329,7 +334,6 @@ export default class InteriorMappingScene extends SceneBase{
 
             gltf.scene.traverse(x=>{
                 if(x instanceof THREE.Mesh){
-                    console.log(x.material);
                     if(x.material.name == "Window"){
                         (x.geometry as THREE.BufferGeometry).computeTangents();
                         x.material = self.material;
@@ -345,7 +349,7 @@ export default class InteriorMappingScene extends SceneBase{
             gltf.scene.scale.set(scale,scale,scale);
             self.group.add(gltf.scene);
            
-            
+            self.gltf = gltf.scene;
         })
     }
 
@@ -372,11 +376,10 @@ export default class InteriorMappingScene extends SceneBase{
         })
         this.material.uniforms.time.value = this.globalTime;
         this.holeMaterial.uniforms.time.value = this.globalTime;
+        this.plane.material["uniforms"].time.value = this.globalTime;
         
-        if(this.cube){
-            // this.cube.translateX(0.1)
-            //this.cube.rotateY(0.01);
-        }
+        
+        
     }
 
     changeState(pageIndex:number)
@@ -422,6 +425,78 @@ export default class InteriorMappingScene extends SceneBase{
         return tex;
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+    showBuildingScene()
+    {
+        this.plane.visible = false;
+        this.gltf.visible = true;
+
+        //Reset camera
+        this.camera.position.z = 8;
+        this.camera.position.y = 0.0;
+        this.camera.position.x = 0.0;
+        this.camera.lookAt(0,0.5,0);
+    }
+
+    showExplainerScene()
+    {
+        this.plane.visible = true;
+        this.gltf.visible = false;
+        
+        this.camera.position.z = 8;
+        this.camera.position.y = 0.0;
+        this.camera.position.x = 0.0;
+        this.camera.lookAt(0,0,0);
+
+        (this.plane.material as THREE.Material).defines = {};
+        (this.plane.material as THREE.Material).needsUpdate = true;
+    }
+
+    showUVOnPlane(){
+        (this.plane.material as THREE.Material).defines["SHOW_NEAR_SURFACE_HIT_POS"] = true;
+        (this.plane.material as THREE.Material).defines["FORCE_OUTPUT_INTERIOR"] = true;
+        (this.plane.material as THREE.Material).needsUpdate = true;
+    }
+
+    showMinDirection(){
+        (this.plane.material as THREE.Material).defines["SHOW_MIN_DIRECTION"] = true;
+        (this.plane.material as THREE.Material).defines["FORCE_OUTPUT_INTERIOR"] = true;
+        (this.plane.material as THREE.Material).needsUpdate = true;
+    }
+
+    showMinDistance(){
+        (this.plane.material as THREE.Material).defines["SHOW_MIN_DIST"] = true;
+        (this.plane.material as THREE.Material).defines["FORCE_OUTPUT_INTERIOR"] = true;
+        (this.plane.material as THREE.Material).needsUpdate = true;
+    }
+
+    showFinalPos(){
+        (this.plane.material as THREE.Material).defines["SHOW_FINAL_POS"] = true;
+        (this.plane.material as THREE.Material).defines["FORCE_OUTPUT_INTERIOR"] = true;
+        (this.plane.material as THREE.Material).needsUpdate = true;
+    }
+
+    showInteriorOnly(){
+        (this.plane.material as THREE.Material).defines["FORCE_OUTPUT_INTERIOR"] = true;
+        (this.plane.material as THREE.Material).needsUpdate = true;
+    }
+
+    enableTint(){
+        (this.plane.material as THREE.Material).defines["TINT_TEXTURE"] = true;
+    }
+
     /**
      * Given a ThreeJS camera and renderer, resizes the scene if the
      * browser window is resized.
@@ -438,4 +513,24 @@ export default class InteriorMappingScene extends SceneBase{
             renderer.setSize( window.innerWidth, window.innerHeight );
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+    //     (this.plane.material as THREE.Material).defines["SHOW_NEAR_SURFACE_HIT_POS"] = true;
+    //     (this.plane.material as THREE.Material).defines["SHOW_MIN_DIRECTION"] = false;
+    //     (this.plane.material as THREE.Material).defines["SHOW_MIN_DIST"] = false;
+    //     (this.plane.material as THREE.Material).defines["SHOW_FINAL_POS"] = false;
+    //     (this.plane.material as THREE.Material).defines["DISABLE_RNG"] = false;
+    //     (this.plane.material as THREE.Material).defines["DISABLE_NORMAL_MAP"] = false;
+    //     (this.plane.material as THREE.Material).defines["TINT_TEXTURE"] = false;
+    //     (this.plane.material as THREE.Material).defines["FORCE_OUTPUT_INTERIOR"] = true;
+    //     (this.plane.material as THREE.Material).defines["FORCE_OUTPUT_REFLECTION_STRENGTH"] = false;
 }
