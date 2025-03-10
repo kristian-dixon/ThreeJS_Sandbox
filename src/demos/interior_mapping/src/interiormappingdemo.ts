@@ -461,40 +461,78 @@ export default class InteriorMappingScene extends SceneBase{
         this.camera.lookAt(0,0,0);
 
         (this.plane.material as THREE.Material).defines = {};
+        (this.plane.material as THREE.Material).defines["FORCE_OUTPUT_INTERIOR"] = true;
         (this.plane.material as THREE.Material).needsUpdate = true;
     }
 
-    showUVOnPlane(){
+    showNearIntersection(){
+        (this.plane.material as THREE.Material).defines = {};
         (this.plane.material as THREE.Material).defines["SHOW_NEAR_SURFACE_HIT_POS"] = true;
         (this.plane.material as THREE.Material).defines["FORCE_OUTPUT_INTERIOR"] = true;
         (this.plane.material as THREE.Material).needsUpdate = true;
     }
 
     showMinDirection(){
+        (this.plane.material as THREE.Material).defines = {};
         (this.plane.material as THREE.Material).defines["SHOW_MIN_DIRECTION"] = true;
         (this.plane.material as THREE.Material).defines["FORCE_OUTPUT_INTERIOR"] = true;
         (this.plane.material as THREE.Material).needsUpdate = true;
     }
 
+    showAxisBorderDist(){
+        (this.plane.material as THREE.Material).defines = {};
+        (this.plane.material as THREE.Material).defines["SHOW_DIST_TO_AXIS_BORDER"] = true;
+        (this.plane.material as THREE.Material).defines["FORCE_OUTPUT_INTERIOR"] = true;
+        (this.plane.material as THREE.Material).needsUpdate = true;
+    }
+
     showMinDistance(){
+        (this.plane.material as THREE.Material).defines = {};
         (this.plane.material as THREE.Material).defines["SHOW_MIN_DIST"] = true;
         (this.plane.material as THREE.Material).defines["FORCE_OUTPUT_INTERIOR"] = true;
         (this.plane.material as THREE.Material).needsUpdate = true;
     }
 
     showFinalPos(){
+        (this.plane.material as THREE.Material).defines = {};
         (this.plane.material as THREE.Material).defines["SHOW_FINAL_POS"] = true;
         (this.plane.material as THREE.Material).defines["FORCE_OUTPUT_INTERIOR"] = true;
         (this.plane.material as THREE.Material).needsUpdate = true;
     }
 
     showInteriorOnly(){
+        (this.plane.material as THREE.Material).defines = {};
         (this.plane.material as THREE.Material).defines["FORCE_OUTPUT_INTERIOR"] = true;
         (this.plane.material as THREE.Material).needsUpdate = true;
     }
-
+    
     enableTint(){
+        (this.plane.material as THREE.Material).defines = {};
         (this.plane.material as THREE.Material).defines["TINT_TEXTURE"] = true;
+        (this.plane.material as THREE.Material).needsUpdate = true;
+    }
+
+    setDistortion(val:number){
+        (this.plane.material as THREE.Material).defines = {};
+        (this.plane.material as THREE.Material).defines["FORCE_DISPLACEMENT_ENABLE"] = true;
+        (this.plane.material as THREE.Material).defines["FORCE_DISABLE_DAY_NIGHT"] = true;
+        (this.plane.material as THREE.Material).needsUpdate = true;
+        (this.plane.material as THREE.ShaderMaterial).uniforms["displacementStrength"].value = val;
+    }
+
+    showBasicInteriorReflection()
+    {
+        (this.plane.material as THREE.Material).defines = {};
+        (this.plane.material as THREE.Material).defines["FORCE_DISABLE_DAY_NIGHT"] = true;
+        (this.plane.material as THREE.Material).needsUpdate = true;       
+    }
+
+
+    showFinal()
+    {
+        (this.plane.material as THREE.Material).defines = {};
+        //(this.plane.material as THREE.Material).defines["FORCE_DISABLE_DAY_NIGHT"] = true;
+        (this.plane.material as THREE.Material).needsUpdate = true;  
     }
 
     /**

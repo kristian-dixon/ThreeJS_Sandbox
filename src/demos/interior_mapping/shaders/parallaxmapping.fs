@@ -46,6 +46,10 @@ vec3 ParralaxMap(vec3 viewDir, float seed){
 
     //Figure out where we actually are in this voxel grid based on the resolved position
     vec3 distToAxisBorder = abs(invDir) - pos * invDir;
+    #ifdef SHOW_DIST_TO_AXIS_BORDER
+        return 0.2*(distToAxisBorder);
+    #endif
+
     //Get closest intersection with border
     float dist = min(distToAxisBorder.x, min(distToAxisBorder.y, distToAxisBorder.z));
 
@@ -95,7 +99,12 @@ void main()	{
   
     vec4 windowSettings = texture2D(windowPallet, vec2(seed, time));
 
-    vec3 normalMap = (texture2D(dispTex, vUv * displacementScale).rgb * 2.0 - 1.0) * displacementStrength * (1.0 - windowSettings.a) ;
+    float displacementModifier = displacementStrength * (1.0 - windowSettings.a);
+    #ifdef FORCE_DISPLACEMENT_ENABLE
+        displacementModifier = displacementStrength;
+    #endif
+
+    vec3 normalMap = (texture2D(dispTex, vUv * displacementScale).rgb * 2.0 - 1.0) * displacementModifier;
     #ifdef DISABLE_NORMAL_MAP 
         normalMap *= 0;
     #endif
@@ -122,6 +131,10 @@ void main()	{
 
     #ifdef FORCE_OUTPUT_REFLECTION_STRENGTH
         gl_FragColor = vec4(reflectionStrength.rrr, 1.0);
+    #endif
+
+    #ifdef FORCE_DISABLE_DAY_NIGHT
+        gl_FragColor = vec4(mix(reflectionColour, interiorColour * 2.0, reflectionStrength),1.0);
     #endif
 
    //gl_FragColor =  vec4(ParralaxMap(viewDir),1.0);
