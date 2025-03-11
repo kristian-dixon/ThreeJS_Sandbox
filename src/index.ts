@@ -1,5 +1,6 @@
 
 import InteriorMappingScene from "./demos/interior_mapping/src/interiormappingdemo";
+import InteriorMappingARScene from "./demos/interior_mapping/src/interiormapping_ar";
 import LowResScene from "./demos/low_res_filter/src/lowresfilter";
 import RefractionScene from "./demos/refraction/src/refraction";
 import UVDisplacementScene from "./demos/uv_displacement/src/UV_Displacement";
@@ -9,6 +10,7 @@ import SceneBase from "./SceneBase";
 let availableScenes = {
     uv_displacement:UVDisplacementScene,
     interior_mapping:InteriorMappingScene,
+    interior_mapping_ar:InteriorMappingARScene,
     whiteboard:WhiteboardDemoScene,
     lowresfilter:LowResScene,
     refraction:RefractionScene
@@ -20,7 +22,7 @@ const urlParams = new URLSearchParams(window.location.search);
 let demo = urlParams.get("demo");
 if(!demo)
 {
-    demo = "interior_mapping";
+    demo = "interior_mapping_ar";
 }
 
 scene = new availableScenes[demo]();
@@ -40,14 +42,15 @@ window.addEventListener('message', function (event) {
     }
 }, false);
 
+scene["renderer"].setAnimationLoop(loop);
 // loops updates
 function loop() {
     // scene.camera.updateProjectionMatrix();
     // scene.renderer.render(scene, scene.camera);
     //scene?.orbitals?.update()
     scene.update();
-    requestAnimationFrame(loop);
+    //requestAnimationFrame(loop);
 }
 
 // runs a continuous loop
-requestAnimationFrame(loop);
+//requestAnimationFrame(loop);
