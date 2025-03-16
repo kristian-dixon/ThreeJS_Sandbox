@@ -6,7 +6,7 @@ import {RGBELoader} from "three/examples/jsm/loaders/RGBELoader"
 import {ARButton} from 'three/examples/jsm/webxr/ARButton.js';
 
 import VertexShader from "../shaders/parallaxmapping.vs";
-import FragmentShader from "../shaders/parallaxmapping.fs";
+import FragmentShader from "../shaders/parallaxmappingPortalCrack.fs";
 
 
 import CubeMap_nx from "../textures/Room2/nx.png";
@@ -26,7 +26,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import Model from '../../whiteboard/models/windows.glb'
 
 import DisplacementTex from '../../../shared/textures/bumpyNormalMap.jpg'
-import StainedGlassTexture from '../textures/AndiWater.jpg'
+import InteriorMap from '../textures/IndoorEnvironment.jpg'
+import Crack from '../textures/CrackTest.png'
 
 /**
  * A class to set up some basic scene elements to minimize code in the
@@ -54,10 +55,10 @@ export default class InteriorMappingScene extends SceneBase{
     initialize(debug: boolean = true, addGridHelper: boolean = true){
         // setup camera
         this.camera = new THREE.PerspectiveCamera(70, this.width / this.height, .01, 100);
-        this.camera.position.z = 8;
+        this.camera.position.z = 1;
         this.camera.position.y = 0.0;
         this.camera.position.x = 0.0;
-        //this.camera.lookAt(0,0.5,0);
+        this.camera.lookAt(0,0,-1);
 
        const light = new THREE.DirectionalLight(0xffffff,2);
        light.position.set(4, 10, 10);
@@ -93,15 +94,15 @@ export default class InteriorMappingScene extends SceneBase{
         let pz = CubeMap_pz;
         let nz = CubeMap_nz;
 
-        let interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz])
+        //let interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz])
         this.material = new THREE.ShaderMaterial({
             uniforms:{
                 time: {value:0.0},
                 ZOffset: {value: 1.0},
-                tCube: { value: interiorMap },
+                tCube: { value: null },
                 reflectCube: { value: null },
                 dispTex: {value:null},
-                stainedGlass : {value:null},
+                crack : {value:null},
                 uvScale: {value: new THREE.Vector2(1,1)},
                 uvOffset: {value: new THREE.Vector2(0,0)},
                 reflBias: {value: -0.05},
@@ -138,6 +139,12 @@ export default class InteriorMappingScene extends SceneBase{
             
         })
 
+        new THREE.TextureLoader().load(InteriorMap, (tex)=>{
+            this.material.uniforms["tCube"].value = tex;
+            this.plane.material["uniforms"]["tCube"].value = tex;
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.generateMipmaps = true;
+        });
         new THREE.TextureLoader().load(DisplacementTex, (tex)=>{
             this.material.uniforms["dispTex"].value = tex;
             this.plane.material["uniforms"]["dispTex"].value = tex;
@@ -152,9 +159,9 @@ export default class InteriorMappingScene extends SceneBase{
             tex.minFilter = tex.magFilter = THREE.NearestFilter;
         });
       
-        new THREE.TextureLoader().load(StainedGlassTexture, (tex)=>{
-            this.material.uniforms["stainedGlass"].value = tex;
-            this.plane.material["uniforms"]["stainedGlass"].value = tex;
+        new THREE.TextureLoader().load(Crack, (tex)=>{
+            this.material.uniforms["crack"].value = tex;
+            this.plane.material["uniforms"]["crack"].value = tex;
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
         });
 
@@ -163,7 +170,7 @@ export default class InteriorMappingScene extends SceneBase{
         
 
 
-        this.loadModel(Model)
+        //this.loadModel(Model)
         this.showExplainerScene();
         window["DemoApp"] = this;
 
@@ -225,7 +232,7 @@ export default class InteriorMappingScene extends SceneBase{
         
         this.renderer.render(this.group, this.camera);
         
-        //this.globalTime = (this.globalTime +  this.timeManager.getDelta() * 0.1) % 1.0;
+        this.globalTime = (this.globalTime +  this.timeManager.getDelta() * 0.025) % 1.0;
 //
         //this.group.traverse((x)=>{
         //    if(x instanceof THREE.Light){
@@ -234,7 +241,8 @@ export default class InteriorMappingScene extends SceneBase{
         //})
         //this.material.uniforms.time.value = this.globalTime;
         //this.holeMaterial.uniforms.time.value = this.globalTime;
-        //this.plane.material["uniforms"].time.value = this.globalTime;
+
+        this.plane.material["uniforms"].time.value = this.globalTime;
         
         
     }
