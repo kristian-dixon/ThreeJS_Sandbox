@@ -14,7 +14,7 @@ import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 
 import { PaintableTexture } from '../../../shared/meshpainting/scripts/PaintableSurface';
 import { DepthPick } from '../../../shared/picking/depthpick';
-import GlbTest from "../models/CesiumMilkTruck.glb"
+import GlbTest from "../../../shared/assets/models/CesiumMilkTruck.glb"
 
 export default class WhiteboardDemoScene extends SceneBase {
     camera: THREE.PerspectiveCamera = null;

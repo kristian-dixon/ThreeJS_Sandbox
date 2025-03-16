@@ -4,9 +4,9 @@ import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 import SceneBase from '../../../SceneBase';
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 
-import model from "../../whiteboard/models/gem.glb"
-import skybox from "../textures/tears_of_steel_bridge_2k.jpg";
-import normalMap from "../textures/bumpyNormalMap.jpg";
+import model from "../../../shared/assets/models/gem.glb"
+import skybox from "../../../shared/assets/textures/skyboxes/tears_of_steel_bridge_2k.jpg";
+import normalMap from "../../../shared/assets/textures/normal_map/bumpyNormalMap.jpg";
 import { Blitter } from '../../../shared/blitter/blit';
 import refractionVS from "../shader/refraction.vs";
 import refractionFS from "../shader/refraction.fs";

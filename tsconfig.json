@@ -9,5 +9,6 @@
     "allowJs": true,
     "moduleResolution": "node",
     "lib":["ES2015.Promise", "ES6", "DOM"],
+    
   }
 }

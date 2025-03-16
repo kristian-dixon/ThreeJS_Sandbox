@@ -4,7 +4,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 import SceneBase from '../../../SceneBase';
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 
-import model from "../../whiteboard/models/smooth_suzanne.glb"
+import model from "../../../shared/assets/models/smooth_suzanne.glb"
 
 /**
  * A class to set up some basic scene elements to minimize code in the

@@ -2,10 +2,11 @@ import * as THREE from 'three';
 import {GUI} from 'dat.gui';
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import {RGBELoader} from "three/examples/jsm/loaders/RGBELoader"
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import SceneBase from '../../../SceneBase';
 
 import VertexShader from "../shaders/parallaxmapping.vs";
 import FragmentShader from "../shaders/parallaxmapping.fs";
-
 
 import CubeMap_nx from "../textures/Room2/nx.png";
 import CubeMap_ny from "../textures/Room/ny.png";
@@ -14,17 +15,13 @@ import CubeMap_px from "../textures/Room/px.png";
 import CubeMap_py from "../textures/Room/py.png";
 import CubeMap_nz from "../textures/Room2/nz.png";
 
-import EnvironmentMap from "../textures/medieval_cafe_1k.hdr";
+import EnvironmentMap from "../../../shared/assets/textures/skyboxes/medieval_cafe_1k.hdr";
 import WindowPallet from "../textures/WindowSettingsCyclePallet.png";
 
-import SceneBase from '../../../SceneBase';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import Model from '../../../shared/assets/models/windows.glb'
 
-
-import Model from '../../whiteboard/models/windows.glb'
-
-import DisplacementTex from '../../../shared/textures/bumpyNormalMap.jpg'
-import StainedGlassTexture from '../textures/AndiWater.jpg'
+import DisplacementTex from '../../../shared/assets/textures/normal_map/bumpyNormalMap.jpg'
+import StainedGlassTexture from '../../../shared/assets/textures/noise/VoroniColours.jpg'
 
 /**
  * A class to set up some basic scene elements to minimize code in the
@@ -91,12 +88,6 @@ export default class InteriorMappingScene extends SceneBase{
         let nz = CubeMap_nz;
 
         let interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz])
-        
-        
-
-        //this.background = interiorMap;
-        //this.environment = interiorMap;
-        //this.background = new THREE.Color(1,0,0)
 
         this.material = new THREE.ShaderMaterial({
             uniforms:{
@@ -114,7 +105,6 @@ export default class InteriorMappingScene extends SceneBase{
                 displacementStrength: {value: 0.33},
                 displacementScale: {value: 0.14},
                 windowPallet: {value:null}
-                //value: new THREE.TextureLoader().load(Img)}
             },
             vertexShader: VertexShader,
             fragmentShader:FragmentShader,

@@ -14,12 +14,12 @@ import FireFragmentShader from "../shaders/fire.fs";
 
 
 import FireTex from "../textures/fire2.png"
-import FlowTex from "../textures/flowmap.png"
+import FlowTex from "../../../shared/assets/textures/flow_map/flowmap.png"
 import SceneBase from '../../../SceneBase';
+import WhiteTex from "../../../shared/assets/textures/placeholder/white.png"
 import { PaintableTexture } from '../../../shared/meshpainting/scripts/PaintableSurface';
 import { DepthPick } from '../../../shared/picking/depthpick';
 import { InputManager, Pointer } from '../../../shared/input/InputManager';
-import WhiteTex from "../../../shared/textures/white.png"
 
 
 import VectorPaintShader from "../shaders/vectorpaint.fs";

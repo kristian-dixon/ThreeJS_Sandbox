@@ -8,26 +8,13 @@ import {ARButton} from 'three/examples/jsm/webxr/ARButton.js';
 import VertexShader from "../shaders/parallaxmapping.vs";
 import FragmentShader from "../shaders/parallaxmappingPortalCrack.fs";
 
-
-import CubeMap_nx from "../textures/Room2/nx.png";
-import CubeMap_ny from "../textures/Room/ny.png";
-import CubeMap_pz from "../textures/Room/pz.png";
-import CubeMap_px from "../textures/Room/px.png";
-import CubeMap_py from "../textures/Room/py.png";
-import CubeMap_nz from "../textures/Room2/nz.png";
-
-import EnvironmentMap from "../textures/medieval_cafe_1k.hdr";
-import WindowPallet from "../textures/WindowSettingsCyclePallet.png";
-
 import SceneBase from '../../../SceneBase';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
-
-import Model from '../../whiteboard/models/windows.glb'
-
-import DisplacementTex from '../../../shared/textures/bumpyNormalMap.jpg'
-import InteriorMap from '../textures/IndoorEnvironment.jpg'
-import Crack from '../textures/CrackTest.png'
+import EnvironmentMap from "../../../shared/assets/textures/skyboxes/medieval_cafe_1k.hdr";
+import DisplacementTex from '../../../shared/assets/textures/normal_map/bumpyNormalMap.jpg'
+import WindowPallet from "../textures/WindowSettingsCyclePallet.png";
+import InteriorMap from '../../../shared/assets/textures/skyboxes/IndoorEnvironment.jpg'
+import Crack from '../textures/Crack.png'
 
 /**
  * A class to set up some basic scene elements to minimize code in the
@@ -60,10 +47,10 @@ export default class InteriorMappingScene extends SceneBase{
         this.camera.position.x = 0.0;
         this.camera.lookAt(0,0,-1);
 
-       const light = new THREE.DirectionalLight(0xffffff,2);
-       light.position.set(4, 10, 10);
-       this.group.add(light);
-       this.group.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
+        const light = new THREE.DirectionalLight(0xffffff,2);
+        light.position.set(4, 10, 10);
+        this.group.add(light);
+        this.group.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
 
         // setup renderer
         this.renderer = new THREE.WebGLRenderer({
@@ -86,13 +73,6 @@ export default class InteriorMappingScene extends SceneBase{
         const geometry = new THREE.PlaneGeometry(0.5,0.5, 8,8);
         //const geometry = new THREE.SphereGeometry(0.5);
         geometry.computeTangents();
-
-        let px = CubeMap_px;
-        let nx = CubeMap_nx;
-        let py = CubeMap_py;
-        let ny = CubeMap_ny;
-        let pz = CubeMap_pz;
-        let nz = CubeMap_nz;
 
         //let interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz])
         this.material = new THREE.ShaderMaterial({
@@ -180,44 +160,8 @@ export default class InteriorMappingScene extends SceneBase{
         this.renderer.xr.enabled = true;
     }
 
-    gltf:THREE.Group;
-    loadModel(model:any){
-        let self = this;
 
-        let gltfLoader = new GLTFLoader();
-        gltfLoader.load(model, (gltf)=>{
-            let bounds = new THREE.Box3().setFromObject(gltf.scene);
-            let boundsSize = bounds.getSize(new THREE.Vector3())
-            let scale = 1.0/Math.max(boundsSize.x, boundsSize.y, boundsSize.z);
-
-            let center = bounds.getCenter(new THREE.Vector3());
-            center = center.multiplyScalar(-scale);
-            center.x += 1;
-            gltf.scene.position.copy(center);
-        
-           
-
-            gltf.scene.traverse(x=>{
-                x.visible = true;
-                if(x instanceof THREE.Mesh){
-                    if(x.material.name == "Window"){
-                        (x.geometry as THREE.BufferGeometry).computeTangents();
-                        x.material = self.material;
-                    }
-
-                    if(x.material.name == "Hole"){
-                        (x.geometry as THREE.BufferGeometry).computeTangents();
-                        x.material = self.material;
-                    }
-                }
-            })
-
-            gltf.scene.scale.set(scale,scale,scale);
-            this.group.add(gltf.scene);
-
-        })
-    }
-
+   
     globalTime = 0;
     timeManager: THREE.Clock = new THREE.Clock();
     update(){
