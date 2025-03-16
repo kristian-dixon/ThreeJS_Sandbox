@@ -7,7 +7,7 @@ import FoldoutShaderFrag from "../shaders/planet_foldout/frag.fs"
 
 import GradientTexturePath from "../textures/SeaLandAirGradient.png";
 
-import SceneBase from '../../../SceneBase';
+import DemoBase from '../../../SceneBase';
 import { InputManager, Pointer } from '../../../shared/input/InputManager';
 
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
@@ -16,7 +16,7 @@ import { PaintableTexture } from '../../../shared/meshpainting/scripts/Paintable
 import { DepthPick } from '../../../shared/picking/depthpick';
 import GlbTest from "../../../shared/assets/models/CesiumMilkTruck.glb"
 
-export default class WhiteboardDemoScene extends SceneBase {
+export default class WhiteboardDemoScene extends DemoBase {
     camera: THREE.PerspectiveCamera = null;
     renderer: THREE.WebGLRenderer = null;
 
@@ -42,7 +42,7 @@ export default class WhiteboardDemoScene extends SceneBase {
     gltf: THREE.Group;
 
     depthTest:DepthPick;
-
+    scene: THREE.Scene = new THREE.Scene();
     
     initialize(debug: boolean = true, addGridHelper: boolean = true) {
         this.clock = new THREE.Clock(true);
@@ -149,15 +149,15 @@ export default class WhiteboardDemoScene extends SceneBase {
     private setupScene() {
         const light = new THREE.DirectionalLight(0xffffff, 5);
         light.position.set(4, 10, 10);
-        this.add(light);
-        this.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
+        this.scene.add(light);
+        this.scene.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
 
         if(window.self == window.top){
-            this.background = new THREE.Color(0x9f88);
+            this.scene.background = new THREE.Color(0x9f88);
         }
         
         this.rootNode = new THREE.Object3D();
-        this.add(this.rootNode);
+        this.scene.add(this.rootNode);
 
         let self = this;
         this.loadModel(GlbTest);
@@ -200,7 +200,7 @@ export default class WhiteboardDemoScene extends SceneBase {
             side: THREE.DoubleSide
         });
 
-        this.add(new THREE.Mesh(new THREE.PlaneGeometry(), this.paintPreviewMaterial));
+        this.scene.add(new THREE.Mesh(new THREE.PlaneGeometry(), this.paintPreviewMaterial));
     }
 
     loadModel(model:any){
@@ -401,7 +401,7 @@ export default class WhiteboardDemoScene extends SceneBase {
             this.paintableTexture.Paint(this.renderer,this.camera,this.rootNode,new THREE.Vector3(0,10000,0));
         }
 
-        this.renderer.render(this, this.camera);
+        this.renderer.render(this.scene, this.camera);
         if(this.paintPreviewMaterial)
         {
             this.paintPreviewMaterial["uniforms"].uTime.value += dt;
@@ -426,7 +426,7 @@ export default class WhiteboardDemoScene extends SceneBase {
             return;
         }
 
-        let depth = this.depthTest.pick(pointerInfo.cssPosition, this, this.renderer, this.camera);
+        let depth = this.depthTest.pick(pointerInfo.cssPosition, this.scene, this.renderer, this.camera);
         if(depth >= (this.camera.far - (this.camera.far * 0.001)))
         {
             //Probably casting against the skybox

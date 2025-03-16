@@ -3,7 +3,7 @@ import {GUI} from 'dat.gui';
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import {RGBELoader} from "three/examples/jsm/loaders/RGBELoader"
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import SceneBase from '../../../SceneBase';
+import DemoBase from '../../../SceneBase';
 
 import VertexShader from "../shaders/parallaxmapping.vs";
 import FragmentShader from "../shaders/parallaxmapping.fs";
@@ -27,7 +27,7 @@ import StainedGlassTexture from '../../../shared/assets/textures/noise/VoroniCol
  * A class to set up some basic scene elements to minimize code in the
  * main execution file.
  */
-export default class InteriorMappingScene extends SceneBase{
+export default class InteriorMappingScene extends DemoBase{
     gui: GUI = null;
     camera: THREE.PerspectiveCamera = null;
     renderer: THREE.WebGLRenderer = null;
@@ -45,8 +45,7 @@ export default class InteriorMappingScene extends SceneBase{
 
     currentPage = 0;
     group: THREE.Group = new THREE.Group();
-
-    
+    scene: THREE.Scene = new THREE.Scene();
 
     initialize(debug: boolean = true, addGridHelper: boolean = true){
         // setup camera
@@ -123,8 +122,8 @@ export default class InteriorMappingScene extends SceneBase{
 
         let hdri = new RGBELoader().load(EnvironmentMap, (tex)=>{
             hdri.mapping = THREE.EquirectangularReflectionMapping
-            this.background = hdri;
-            this.environment = hdri;
+            this.scene.background = hdri;
+            this.scene.environment = hdri;
 
             this.material.uniforms["reflectCube"].value = hdri;
             this.holeMaterial.uniforms["reflectCube"].value = hdri;
@@ -349,7 +348,7 @@ export default class InteriorMappingScene extends SceneBase{
         this.camera.updateProjectionMatrix();
        
         this.renderer.autoClear = false;
-        this.renderer.render(this, this.camera);
+        this.renderer.render(this.scene, this.camera);
 
         this.renderer.setClearColor(new THREE.Color(1,0,0), 0.0);
         this.renderer.clear(true, true, true);

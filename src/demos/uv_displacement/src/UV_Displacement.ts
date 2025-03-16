@@ -15,7 +15,7 @@ import FireFragmentShader from "../shaders/fire.fs";
 
 import FireTex from "../textures/fire2.png"
 import FlowTex from "../../../shared/assets/textures/flow_map/flowmap.png"
-import SceneBase from '../../../SceneBase';
+import DemoBase from '../../../SceneBase';
 import WhiteTex from "../../../shared/assets/textures/placeholder/white.png"
 import { PaintableTexture } from '../../../shared/meshpainting/scripts/PaintableSurface';
 import { DepthPick } from '../../../shared/picking/depthpick';
@@ -35,7 +35,7 @@ export enum PaintMode{
  * A class to set up some basic scene elements to minimize code in the
  * main execution file.
  */
-export default class UVDisplacementScene extends SceneBase{
+export default class UVDisplacementScene extends DemoBase{
 
     // A dat.gui class debugger that is added by default
     gui: GUI = null;
@@ -74,6 +74,7 @@ export default class UVDisplacementScene extends SceneBase{
 
     additiveCopyMaterial: THREE.ShaderMaterial;
     dispTex: THREE.Texture;
+    scene: THREE.Scene = new THREE.Scene();
 
     initialize(debug: boolean = true, addGridHelper: boolean = true){
         window["scene"] = this;
@@ -149,7 +150,7 @@ export default class UVDisplacementScene extends SceneBase{
         }))
 
         this.paintCanvas.position.set(0.525,0,0);
-        this.add(this.paintCanvas); 
+        this.scene.add(this.paintCanvas); 
         
        
         this.albedoPaintTexture.Import(this.fireTexture);
@@ -191,7 +192,7 @@ export default class UVDisplacementScene extends SceneBase{
         let renderPass = new RenderPass(heroScene, this.camera);
         this.effectComposer.addPass(renderPass);
 
-        let renderPass2 = new RenderPass(this, this.camera);
+        let renderPass2 = new RenderPass(this.scene, this.camera);
         renderPass2.clear = false;
         
         this.bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 0.075, 0.1, 0.1 );
@@ -402,7 +403,7 @@ export default class UVDisplacementScene extends SceneBase{
             this.heroModel.position.set(0,-0.25,0);
             this.heroModel.scale.set(2,2,2);
 
-            this.visible = false;
+            this.scene.visible = false;
 
             this.setPaintMode("None");
             this.setRenderDrawnFlowmap(false);
@@ -417,7 +418,7 @@ export default class UVDisplacementScene extends SceneBase{
             this.material.uniforms.displacementUVScale.value = new THREE.Vector2(1,1);
             this.material.uniforms.displacementStr.value = 0.1;
             this.material.uniforms.verticalStrength.value = 0;
-            this.visible = true;
+            this.scene.visible = true;
 
             
             this.setPaintMode("Flow");

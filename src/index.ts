@@ -5,7 +5,7 @@ import LowResScene from "./demos/low_res_filter/src/lowresfilter";
 import RefractionScene from "./demos/refraction/src/refraction";
 import UVDisplacementScene from "./demos/uv_displacement/src/UV_Displacement";
 import WhiteboardDemoScene from "./demos/whiteboard/src/whiteboarddemo";
-import SceneBase from "./SceneBase";
+import DemoBase from "./SceneBase";
 
 let availableScenes = {
     uv_displacement:UVDisplacementScene,
@@ -16,7 +16,7 @@ let availableScenes = {
     refraction:RefractionScene
 }
 
-let scene: SceneBase = null;
+let scene: DemoBase = null;
 
 const urlParams = new URLSearchParams(window.location.search);
 let demo = urlParams.get("demo");

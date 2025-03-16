@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {GUI} from 'dat.gui';
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
-import SceneBase from '../../../SceneBase';
+import DemoBase from '../../../SceneBase';
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 
 import model from "../../../shared/assets/models/smooth_suzanne.glb"
@@ -10,7 +10,7 @@ import model from "../../../shared/assets/models/smooth_suzanne.glb"
  * A class to set up some basic scene elements to minimize code in the
  * main execution file.
  */
-export default class LowResScene extends SceneBase{
+export default class LowResScene extends DemoBase{
    
     recieveMessage(call: string, args: any) {
         throw new Error('Method not implemented.');
@@ -37,6 +37,8 @@ export default class LowResScene extends SceneBase{
 
     orbitals: OrbitControls = null;
 
+    scene: THREE.Scene = new THREE.Scene();
+
     initialize(debug: boolean = true, addGridHelper: boolean = true){
         window["scene"] = this;
        
@@ -48,8 +50,8 @@ export default class LowResScene extends SceneBase{
 
         const light = new THREE.DirectionalLight(0xffffff, 5);
         light.position.set(4, 10, 10);
-        this.add(light);
-        this.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
+        this.scene.add(light);
+        this.scene.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
 
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById("app") as HTMLCanvasElement,
@@ -80,7 +82,7 @@ export default class LowResScene extends SceneBase{
             gltf.scene.position.copy(center);
             gltf.scene.scale.set(scale,scale,scale);
             //gltf.scene.rotateY(Math.PI / 2.0)
-            this.add(gltf.scene);
+            this.scene.add(gltf.scene);
         });
      
 
@@ -167,7 +169,7 @@ export default class LowResScene extends SceneBase{
 
         
         this.renderer.setRenderTarget(this.sceneRenderTarget);
-        this.renderer.render(this, this.camera);
+        this.renderer.render(this.scene, this.camera);
 
         this.renderer.autoClear = false;
 

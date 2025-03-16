@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {GUI} from 'dat.gui';
 import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
-import SceneBase from '../../../SceneBase';
+import DemoBase from '../../../SceneBase';
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 
 import model from "../../../shared/assets/models/gem.glb"
@@ -12,10 +12,10 @@ import refractionVS from "../shader/refraction.vs";
 import refractionFS from "../shader/refraction.fs";
 import normalBuffer from "../shader/normalBuffer.fs";
 
-export default class RefractionScene extends SceneBase{
+export default class RefractionScene extends DemoBase{
    
     recieveMessage(call: string, args: any) {
-        this.dispatchEvent({type:call, message:args});
+        this.scene.dispatchEvent({type:call, message:args});
     }
 
     // A dat.gui class debugger that is added by default
@@ -43,6 +43,7 @@ export default class RefractionScene extends SceneBase{
     transparentScene: THREE.Scene;
 
     webcamFeed: HTMLVideoElement;
+    scene: THREE.Scene = new THREE.Scene();
 
     initialize(debug: boolean = true, addGridHelper: boolean = true){
         window["scene"] = this;
@@ -54,7 +55,7 @@ export default class RefractionScene extends SceneBase{
 
         const light = new THREE.DirectionalLight(0xffffff, 5);
         light.position.set(4, 10, 10);
-        this.add(light);
+        this.scene.add(light);
         //this.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
 
         this.renderer = new THREE.WebGLRenderer({
@@ -88,12 +89,12 @@ export default class RefractionScene extends SceneBase{
             gltf.scene.position.copy(center);
             gltf.scene.scale.set(scale,scale,scale);
 
-            this.dispatchEvent({type:"GltfLoaded", message:gltf})  
+            this.scene.dispatchEvent({type:"GltfLoaded", message:gltf})  
         });  
         
         const loader = new THREE.TextureLoader();
         loader.load(normalMap, (tex)=>{
-            this.dispatchEvent({type:"NormalMapLoaded", message:tex})
+            this.scene.dispatchEvent({type:"NormalMapLoaded", message:tex})
         })
 
         //this.background = new THREE.Color('red');
@@ -101,8 +102,8 @@ export default class RefractionScene extends SceneBase{
             skybox,
             () => {
               texture.mapping = THREE.EquirectangularReflectionMapping;
-              self.background = texture;
-              self.environment = texture;
+              self.scene.background = texture;
+              self.scene.environment = texture;
               self.transparentScene.environment = texture;
             });
         
@@ -133,12 +134,12 @@ export default class RefractionScene extends SceneBase{
         let sphere = new THREE.Mesh(geo, material);
         this.refractionGroup.add(sphere);
 
-        this.addEventListener('NormalMapLoaded', (evt)=>{
+        this.scene.addEventListener('NormalMapLoaded', (evt)=>{
             material.uniforms.normalMap.value = evt.message;
         });
 
         let gem = null;
-        this.addEventListener('GltfLoaded', (evt)=>{
+        this.scene.addEventListener('GltfLoaded', (evt)=>{
             let gltf = evt.message as GLTF;
             let clone = gltf.scene.clone();
 
@@ -158,7 +159,7 @@ export default class RefractionScene extends SceneBase{
             });
         });
 
-        this.addEventListener('SwapModel', ()=>{
+        this.scene.addEventListener('SwapModel', ()=>{
             gem.visible = sphere.visible;
             sphere.visible = !sphere.visible;
         });
@@ -195,12 +196,12 @@ export default class RefractionScene extends SceneBase{
         let sphere = new THREE.Mesh(geo, material);
         this.transparentScene.add(sphere);
 
-        this.addEventListener('NormalMapLoaded', (evt)=>{
+        this.scene.addEventListener('NormalMapLoaded', (evt)=>{
             material.normalMap = evt.message;
         });
 
         let gem = null;
-        this.addEventListener('GltfLoaded', (evt)=>{
+        this.scene.addEventListener('GltfLoaded', (evt)=>{
             let gltf = evt.message as GLTF;
             let clone = gltf.scene.clone();
             gem = clone;
@@ -219,7 +220,7 @@ export default class RefractionScene extends SceneBase{
             });
         });
 
-        this.addEventListener('SwapModel', ()=>{
+        this.scene.addEventListener('SwapModel', ()=>{
             gem.visible = sphere.visible;
             sphere.visible = !sphere.visible;
         });
@@ -235,7 +236,7 @@ export default class RefractionScene extends SceneBase{
         this.camera.updateProjectionMatrix();
 
         this.renderer.setRenderTarget(this.sceneRenderTarget);
-        this.renderer.render(this, this.camera);
+        this.renderer.render(this.scene, this.camera);
         this.renderer.autoClear = false;
         
         this.blitter.blit(this.sceneRenderTarget.texture, this.copyRenderTarget, this.renderer, this.camera);
@@ -260,7 +261,7 @@ export default class RefractionScene extends SceneBase{
                 self.webcamFeed.srcObject = stream;
                 self.webcamFeed.play();
                 const texture = new THREE.VideoTexture( self.webcamFeed );
-                self.background = texture;
+                self.scene.background = texture;
             } 
         );
             
@@ -269,7 +270,7 @@ export default class RefractionScene extends SceneBase{
 
     changeModel()
     {
-        this.dispatchEvent({type:'SwapModel'})
+        this.scene.dispatchEvent({type:'SwapModel'})
         //this.gltf.visible = this.sphere.visible;
         //this.sphere.visible = !this.sphere.visible;
     }
@@ -289,7 +290,7 @@ export default class RefractionScene extends SceneBase{
             self.copyRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
             self.backfaceNormalRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height, {generateMipmaps:true});
 
-            self.dispatchEvent({type:'RefreshRTMaterials'});
+            self.scene.dispatchEvent({type:'RefreshRTMaterials'});
             //self.refractionMaterial.uniforms.map.value = self.copyRenderTarget.texture;   
             //self.refractionMaterial.uniforms.backfaceNormals.value = self.backfaceNormalRenderTarget.texture;   
         }
