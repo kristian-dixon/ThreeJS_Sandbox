@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import {GUI} from 'dat.gui';
-import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import {RGBELoader} from "three/examples/jsm/loaders/RGBELoader"
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import DemoBase from '../../../SceneBase';
@@ -22,24 +21,14 @@ import Model from '../../../shared/assets/models/windows.glb'
 
 import DisplacementTex from '../../../shared/assets/textures/normal_map/bumpyNormalMap.jpg'
 import StainedGlassTexture from '../../../shared/assets/textures/noise/VoroniColours.jpg'
+import { OrbitalCamera } from '../../../shared/generic_scene_elements/camera';
+import { DefaultLighting } from '../../../shared/generic_scene_elements/lighting';
 
-/**
- * A class to set up some basic scene elements to minimize code in the
- * main execution file.
- */
+
 export default class InteriorMappingScene extends DemoBase{
-    gui: GUI = null;
-    camera: THREE.PerspectiveCamera = null;
-    renderer: THREE.WebGLRenderer = null;
-
-    orbitals: OrbitControls = null;
-
+    camera: OrbitalCamera;
     material: THREE.ShaderMaterial = null;
     holeMaterial: THREE.ShaderMaterial = null;
-
-    // Get some basic params
-    width = window.innerWidth;
-    height = window.innerHeight;
 
     plane: THREE.Mesh;
 
@@ -47,52 +36,21 @@ export default class InteriorMappingScene extends DemoBase{
     group: THREE.Group = new THREE.Group();
     scene: THREE.Scene = new THREE.Scene();
 
-    initialize(debug: boolean = true, addGridHelper: boolean = true){
-        // setup camera
-        this.camera = new THREE.PerspectiveCamera(35, this.width / this.height, .1, 100);
-        this.camera.position.z = 8;
-        this.camera.position.y = 0.0;
-        this.camera.position.x = 0.0;
-        this.camera.lookAt(0,0.5,0);
+    gltf:THREE.Group;
+    globalTime = 0;
 
-       const light = new THREE.DirectionalLight(0xffffff,2);
-       light.position.set(4, 10, 10);
-       this.group.add(light);
-       this.group.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
+    initialize(){
+        this.camera = new OrbitalCamera(60, .1, 100, this.renderer);
+        this.scene.position.set(0,0,-1);
+        this.group.position.set(0,0,-1);
 
-        // setup renderer
-        this.renderer = new THREE.WebGLRenderer({
-            canvas: document.getElementById("app") as HTMLCanvasElement,
-            alpha: true
-        });
-        this.renderer.setSize(this.width, this.height);
-
-        // add window resizing
-        InteriorMappingScene.addWindowResizing(this.camera, this.renderer);
-
-        // sets up the camera's orbital controls
-        this.orbitals = new OrbitControls(this.camera, this.renderer.domElement)
-
-
-        // Creates the geometry + materials
-        const geometry = new THREE.PlaneGeometry(3,3, 8,8);
-        //const geometry = new THREE.SphereGeometry(0.5);
-        geometry.computeTangents();
-
-        let px = CubeMap_px;
-        let nx = CubeMap_nx;
-        let py = CubeMap_py;
-        let ny = CubeMap_ny;
-        let pz = CubeMap_pz;
-        let nz = CubeMap_nz;
-
-        let interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz])
+        DefaultLighting.SetupDefaultLighting(this.group);
 
         this.material = new THREE.ShaderMaterial({
             uniforms:{
                 time: {value:0.0},
                 ZOffset: {value: 1.0},
-                tCube: { value: interiorMap },
+                tCube: { value: null },
                 reflectCube: { value: null },
                 dispTex: {value:null},
                 stainedGlass : {value:null},
@@ -116,59 +74,18 @@ export default class InteriorMappingScene extends DemoBase{
         this.holeMaterial.uniforms.reflBias.value = 1;
         this.holeMaterial.uniforms.displacementScale.value = 0;
 
+        const geometry = new THREE.PlaneGeometry(1,1, 32,32);
+        geometry.computeTangents();
         this.plane = new THREE.Mesh(geometry, new THREE.ShaderMaterial().copy(this.material));
         this.plane.visible = false;
         this.group.add(this.plane);
 
-        let hdri = new RGBELoader().load(EnvironmentMap, (tex)=>{
-            hdri.mapping = THREE.EquirectangularReflectionMapping
-            this.scene.background = hdri;
-            this.scene.environment = hdri;
-
-            this.material.uniforms["reflectCube"].value = hdri;
-            this.holeMaterial.uniforms["reflectCube"].value = hdri;
-            this.plane.material["uniforms"]["reflectCube"].value = hdri;
-           
-            
-        })
-
-        new THREE.TextureLoader().load(DisplacementTex, (tex)=>{
-            this.material.uniforms["dispTex"].value = tex;
-            this.holeMaterial.uniforms["dispTex"].value = tex;
-            this.plane.material["uniforms"]["dispTex"].value = tex;
-            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            tex.generateMipmaps = true;
-        });
-        new THREE.TextureLoader().load(WindowPallet, (tex)=>{
-            this.material.uniforms["windowPallet"].value = tex;
-            this.holeMaterial.uniforms["windowPallet"].value = tex;
-            this.plane.material["uniforms"]["windowPallet"].value = tex;
-            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            tex.generateMipmaps = false;
-            tex.minFilter = tex.magFilter = THREE.NearestFilter;
-        });
-      
-        new THREE.TextureLoader().load(StainedGlassTexture, (tex)=>{
-            this.material.uniforms["stainedGlass"].value = tex;
-            this.holeMaterial.uniforms["stainedGlass"].value = tex;
-            this.plane.material["uniforms"]["stainedGlass"].value = tex;
-            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-        });
-
-        
-
-        
-
-
+        this.loadAllTextures();
         this.loadModel(Model)
-        window["DemoApp"] = this;
 
-        // setup Debugger
-        if (debug) {
-            this.gui =  new GUI();
-            if(window.top != window.self){
-                this.gui.hide();
-            }
+        //GUI
+        {
+            //Horrible UI Code (just don't look at it)
 
             // Add camera to debugger
             const cameraGroup = this.gui.addFolder('Camera');
@@ -199,12 +116,9 @@ export default class InteriorMappingScene extends DemoBase{
             let roomDepthSetting = materialSettingsGroup.add(this.material.uniforms["ZOffset"], "value", -1, 10, 0.01);
             roomDepthSetting.name("Depth");
             materialSettingsGroup.open();
-            // Add the cube with some properties
-            // const cubeGroup = this.debugger.addFolder("Cube");
-            // cubeGroup.add(cube.position, 'x', -10, 10);
-            // cubeGroup.add(cube.position, 'y', .5, 10);
-            // cubeGroup.add(cube.position, 'z', -10, 10);
-            // cubeGroup.open();
+
+            let px = CubeMap_px; let nx = CubeMap_nx; let py = CubeMap_py;
+            let ny = CubeMap_ny; let pz = CubeMap_pz; let nz = CubeMap_nz;
 
             let textureUploaderFwd = document.createElement("input")
             textureUploaderFwd.type = "file" 
@@ -213,12 +127,10 @@ export default class InteriorMappingScene extends DemoBase{
             textureUploaderFwd.addEventListener("change", (evt)=>{
                 var userImageURL = URL.createObjectURL( textureUploaderFwd.files[0] );
             
-                //this.loadTexture(userImageURL);
-
                 nx = userImageURL;
-                interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz]);
-                
-                this.material.uniforms["tCube"].value = interiorMap;
+                new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz], (tex)=>{
+                    this.material.uniforms["tCube"].value = tex;
+                });                
             })
 
             let textureUploaderLeft = document.createElement("input")
@@ -231,9 +143,9 @@ export default class InteriorMappingScene extends DemoBase{
                 //this.loadTexture(userImageURL);
 
                 nz = userImageURL;
-                interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz]);
-                
-                this.material.uniforms["tCube"].value = interiorMap;
+                new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz], (tex)=>{
+                    this.material.uniforms["tCube"].value = tex;
+                });  
             })
 
             let textureUploaderRight = document.createElement("input")
@@ -243,8 +155,9 @@ export default class InteriorMappingScene extends DemoBase{
             textureUploaderRight.addEventListener("change", (evt)=>{
                 var userImageURL = URL.createObjectURL( textureUploaderRight.files[0] );
                 pz = userImageURL;
-                interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz]);
-                this.material.uniforms["tCube"].value = interiorMap;
+                new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz], (tex)=>{
+                    this.material.uniforms["tCube"].value = tex;
+                });  
             })
 
             let textureUploaderTop = document.createElement("input")
@@ -254,8 +167,9 @@ export default class InteriorMappingScene extends DemoBase{
             textureUploaderTop.addEventListener("change", (evt)=>{
                 var userImageURL = URL.createObjectURL( textureUploaderTop.files[0] );
                 py = userImageURL;
-                interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz]);
-                this.material.uniforms["tCube"].value = interiorMap;
+                new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz], (tex)=>{
+                    this.material.uniforms["tCube"].value = tex;
+                });  
             })
 
             let textureUploaderBottom = document.createElement("input")
@@ -265,8 +179,9 @@ export default class InteriorMappingScene extends DemoBase{
             textureUploaderBottom.addEventListener("change", (evt)=>{
                 var userImageURL = URL.createObjectURL( textureUploaderBottom.files[0] );
                 ny = userImageURL;
-                interiorMap = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz]);
-                this.material.uniforms["tCube"].value = interiorMap;
+                new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz], (tex)=>{
+                    this.material.uniforms["tCube"].value = tex;
+                });  
             })
     
             let buttonsFuncs = {
@@ -295,16 +210,79 @@ export default class InteriorMappingScene extends DemoBase{
             this.gui.add(buttonsFuncs, "textureImporterRight").name("Load Right Texture");
             this.gui.add(buttonsFuncs, "textureImporterTop").name("Load Top Texture");
             this.gui.add(buttonsFuncs, "textureImporterBottom").name("Load Bottom Texture");
-            //this.gui.add(buttonsFuncs, "textureImporterRight").name("Load Right Texture");
-            
 
-
-
-            //materialSettingsGroup.add(this.material.defines,"OUTPUT_RED");
+            this.gui.add(this, 'showExplainerScene');
         }
     }
 
-    gltf:THREE.Group;
+    update(){
+        super.update();
+       
+        this.renderer.autoClear = false;
+        this.renderer.render(this.scene, this.camera);
+
+        this.renderer.setClearColor(new THREE.Color(1,0,0), 0.0);
+        this.renderer.clear(true, true, true);
+
+       
+        this.renderer.render(this.group, this.camera);
+        
+        this.globalTime = (this.globalTime +  this.getDeltaTime() * 0.1) % 1.0;
+
+        this.group.traverse((x)=>{
+            if(x instanceof THREE.Light){
+                x.intensity = 0.25;//1.0 - Math.abs((this.globalTime - 0.5) * 2.0);
+            }
+        })
+        this.material.uniforms.time.value = this.globalTime;
+        this.holeMaterial.uniforms.time.value = this.globalTime;
+        this.plane.material["uniforms"].time.value = this.globalTime;   
+    }
+
+
+    setUniformValueOnAllMaterials(identifier:string, value:any)
+    {
+        this.material.uniforms[identifier].value = value;
+        this.holeMaterial.uniforms[identifier].value = value;
+        this.plane.material["uniforms"][identifier].value = value;
+    }
+
+    loadAllTextures()
+    {
+        //Setting the address of the cubemaps here so they're easier to change through UI
+        let px = CubeMap_px; let nx = CubeMap_nx; let py = CubeMap_py;
+        let ny = CubeMap_ny; let pz = CubeMap_pz; let nz = CubeMap_nz;
+        new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz], (tex)=>{
+            this.setUniformValueOnAllMaterials('tCube', tex);
+        })
+
+        let hdri = new RGBELoader().load(EnvironmentMap, (tex)=>{
+            hdri.mapping = THREE.EquirectangularReflectionMapping
+            this.scene.background = hdri;
+            this.scene.environment = hdri;
+
+            this.setUniformValueOnAllMaterials("reflectCube", hdri);
+        })
+
+        let textureLoader = new THREE.TextureLoader();
+        textureLoader.load(DisplacementTex, (tex)=>{
+            this.setUniformValueOnAllMaterials("dispTex", tex);
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        });
+        textureLoader.load(WindowPallet, (tex)=>{
+            this.setUniformValueOnAllMaterials("windowPallet", tex);           
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.generateMipmaps = false;
+            tex.minFilter = tex.magFilter = THREE.NearestFilter;
+        });
+
+        new THREE.TextureLoader().load(StainedGlassTexture, (tex)=>{
+            this.setUniformValueOnAllMaterials("stainedGlass", tex); 
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        });
+
+    }
+
     loadModel(model:any){
         let self = this;
 
@@ -312,7 +290,7 @@ export default class InteriorMappingScene extends DemoBase{
         gltfLoader.load(model, (gltf)=>{
             let bounds = new THREE.Box3().setFromObject(gltf.scene);
             let boundsSize = bounds.getSize(new THREE.Vector3())
-            let scale = 3.0/Math.max(boundsSize.x, boundsSize.y, boundsSize.z);
+            let scale = 0.5/Math.max(boundsSize.x, boundsSize.y, boundsSize.z);
 
             let center = bounds.getCenter(new THREE.Vector3());
             center = center.multiplyScalar(-scale);
@@ -342,68 +320,6 @@ export default class InteriorMappingScene extends DemoBase{
         })
     }
 
-    globalTime = 0;
-    timeManagert: THREE.Clock = new THREE.Clock();
-    update(){
-        this.camera.updateProjectionMatrix();
-       
-        this.renderer.autoClear = false;
-        this.renderer.render(this.scene, this.camera);
-
-        this.renderer.setClearColor(new THREE.Color(1,0,0), 0.0);
-        this.renderer.clear(true, true, true);
-
-       
-        this.renderer.render(this.group, this.camera);
-        
-        this.globalTime = (this.globalTime +  this.timeManagert.getDelta() * 0.1) % 1.0;
-
-        this.group.traverse((x)=>{
-            if(x instanceof THREE.Light){
-                x.intensity = 0.25;//1.0 - Math.abs((this.globalTime - 0.5) * 2.0);
-            }
-        })
-        this.material.uniforms.time.value = this.globalTime;
-        this.holeMaterial.uniforms.time.value = this.globalTime;
-        this.plane.material["uniforms"].time.value = this.globalTime;
-        
-        
-        
-    }
-
-    changeState(pageIndex:number)
-    {
-        if(pageIndex == this.currentPage)
-        {
-            return;
-        }
-
-        //Exit state
-        switch(this.currentPage){
-            case 0:{
-                break;
-            }
-            default:{
-                break;
-            }
-        }
-
-        this.currentPage = pageIndex;
-        switch(this.currentPage){
-            case 0:{
-                break;
-            }
-            default:{
-                break;
-            }
-        }
-    }
-
-    recieveMessage(call: string, args: any) {
-        this[call](args);
-    }
-
-
     loadTexture(uri:string): THREE.Texture
     {
         var loader = new THREE.TextureLoader();
@@ -415,18 +331,11 @@ export default class InteriorMappingScene extends DemoBase{
     }
 
 
+    recieveMessage(call: string, args: any) {
+        this[call](args);
+    }
 
-
-
-
-
-
-
-
-
-
-
-
+    //Below is all the states for the blogpost. This should be updated to be less gross eventually.
     showBuildingScene()
     {
         this.plane.visible = false;

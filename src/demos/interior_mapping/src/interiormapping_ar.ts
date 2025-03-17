@@ -15,10 +15,6 @@ import Crack from '../textures/Crack.png'
 export default class InteriorMappingScene extends DemoBase{
 
     camera: OrbitalCamera;
-    // Get some basic params
-    width = window.innerWidth;
-    height = window.innerHeight;
-
     plane: THREE.Mesh;
 
     group: THREE.Group = new THREE.Group();
@@ -78,9 +74,8 @@ export default class InteriorMappingScene extends DemoBase{
 
     update(){ 
         super.update();
-        this.camera.update();
         this.renderer.render(this.group, this.camera);
-        this.globalTime = (this.globalTime +  this.deltaTime() * 0.025) % 1.0;
+        this.globalTime = (this.globalTime +  this.getDeltaTime() * 0.025) % 1.0;
         this.plane.material["uniforms"].time.value = this.globalTime;
     }
 

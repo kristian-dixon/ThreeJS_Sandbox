@@ -51,9 +51,6 @@ export default abstract class DemoBase
         function onWindowResize(){
             self.renderer.setSize( window.innerWidth, window.innerHeight );
         }
-
-        window["DemoApp"] = this;
-
     }
 
     abstract initialize(options?:any);
@@ -67,7 +64,7 @@ export default abstract class DemoBase
         this.events.dispatchEvent({type:call, message:args});
     }
 
-    deltaTime():number{
+    getDeltaTime():number{
         return this.dt;
     }
 }

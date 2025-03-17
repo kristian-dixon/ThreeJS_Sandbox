@@ -10,6 +10,7 @@ export class OrbitalCamera extends THREE.PerspectiveCamera
     {
         super(fov, window.innerWidth/window.innerHeight, near, far)
         this.controls = new OrbitControls(this, renderer.domElement);
+        this.controls.target = new THREE.Vector3(0,0,-1);
  
         let self=this;
         window.addEventListener('resize', ()=>{
@@ -21,10 +22,5 @@ export class OrbitalCamera extends THREE.PerspectiveCamera
     setTarget(target:THREE.Vector3)
     {
         this.controls.target = target;
-    }
-
-    update()
-    {
-        this.controls.update();
     }
 }
