@@ -1,9 +1,6 @@
 import * as THREE from 'three';
-import {GUI} from 'dat.gui';
-import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import {RGBELoader} from "three/examples/jsm/loaders/RGBELoader"
 
-import {ARButton} from 'three/examples/jsm/webxr/ARButton.js';
 
 import VertexShader from "../shaders/parallaxmapping.vs";
 import FragmentShader from "../shaders/parallaxmappingPortalCrack.fs";
@@ -15,18 +12,11 @@ import DisplacementTex from '../../../shared/assets/textures/normal_map/bumpyNor
 import WindowPallet from "../textures/WindowSettingsCyclePallet.png";
 import InteriorMap from '../../../shared/assets/textures/skyboxes/IndoorEnvironment.jpg'
 import Crack from '../textures/Crack.png'
+import { OrbitalCamera } from '../../../shared/generic_scene_elements/camera';
 
-/**
- * A class to set up some basic scene elements to minimize code in the
- * main execution file.
- */
 export default class InteriorMappingScene extends DemoBase{
-    gui: GUI = null;
-    camera: THREE.PerspectiveCamera = null;
-    renderer: THREE.WebGLRenderer = null;
 
-    orbitals: OrbitControls = null;
-
+    camera: OrbitalCamera;
     material: THREE.ShaderMaterial = null;
     holeMaterial: THREE.ShaderMaterial = null;
 
@@ -42,33 +32,12 @@ export default class InteriorMappingScene extends DemoBase{
 
     initialize(debug: boolean = true, addGridHelper: boolean = true){
         // setup camera
-        this.camera = new THREE.PerspectiveCamera(70, this.width / this.height, .01, 100);
-        this.camera.position.z = 1;
-        this.camera.position.y = 0.0;
-        this.camera.position.x = 0.0;
-        this.camera.lookAt(0,0,-1);
-
+        this.camera = new OrbitalCamera(40, 0.01,100,this.renderer);
+        this.camera.setTarget(new THREE.Vector3(0,0,-0.5));
         const light = new THREE.DirectionalLight(0xffffff,2);
         light.position.set(4, 10, 10);
         this.group.add(light);
         this.group.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
-
-        // setup renderer
-        this.renderer = new THREE.WebGLRenderer({
-            canvas: document.getElementById("app") as HTMLCanvasElement,
-            antialias: true,
-            alpha: true
-        });
-        this.renderer.xr.enabled = true;
-        this.renderer.setSize(this.width, this.height);
-        this.renderer.setPixelRatio(window.devicePixelRatio);
-        
-        // add window resizing
-        InteriorMappingScene.addWindowResizing(this.camera, this.renderer);
-
-        // sets up the camera's orbital controls
-        this.orbitals = new OrbitControls(this.camera, this.renderer.domElement)
-
 
         // Creates the geometry + materials
         const geometry = new THREE.PlaneGeometry(0.5,0.5, 8,8);
@@ -146,50 +115,28 @@ export default class InteriorMappingScene extends DemoBase{
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
         });
 
-        
-
-        
-
 
         //this.loadModel(Model)
         this.showExplainerScene();
         window["DemoApp"] = this;
-
-
-        let button = ARButton.createButton(this.renderer, {offerSession:true});
-        document.body.appendChild(button);
-        this.renderer.xr.enabled = true;
     }
 
 
    
     globalTime = 0;
-    timeManager: THREE.Clock = new THREE.Clock();
-    update(){
-        this.camera.updateProjectionMatrix();
-              
+    update(){ 
+        super.update();
+        this.camera.update();
         this.renderer.autoClear = false;
         this.renderer.render(this.scene, this.camera);
 
         this.renderer.setClearColor(new THREE.Color(1,0,0), 0.0);
         this.renderer.clear(true, true, true);
-
         
         this.renderer.render(this.group, this.camera);
         
-        this.globalTime = (this.globalTime +  this.timeManager.getDelta() * 0.025) % 1.0;
-//
-        //this.group.traverse((x)=>{
-        //    if(x instanceof THREE.Light){
-        //        x.intensity = 0.25;//1.0 - Math.abs((this.globalTime - 0.5) * 2.0);
-        //    }
-        //})
-        //this.material.uniforms.time.value = this.globalTime;
-        //this.holeMaterial.uniforms.time.value = this.globalTime;
-
+        this.globalTime = (this.globalTime +  this.deltaTime() * 0.025) % 1.0;
         this.plane.material["uniforms"].time.value = this.globalTime;
-        
-        
     }
 
     changeState(pageIndex:number)
@@ -253,7 +200,7 @@ export default class InteriorMappingScene extends DemoBase{
 
 
         //Reset camera
-        this.camera.position.z = 8;
+        this.camera.position.z = 1;
         this.camera.position.y = 0.0;
         this.camera.position.x = 0.0;
         this.camera.lookAt(0,0.5,0);
@@ -338,21 +285,9 @@ export default class InteriorMappingScene extends DemoBase{
         (this.plane.material as THREE.Material).needsUpdate = true;  
     }
 
-    /**
-     * Given a ThreeJS camera and renderer, resizes the scene if the
-     * browser window is resized.
-     * @param camera - a ThreeJS PerspectiveCamera object.
-     * @param renderer - a subclass of a ThreeJS Renderer object.
-     */
+    
     static addWindowResizing(camera: THREE.PerspectiveCamera, renderer: THREE.Renderer){
-        window.addEventListener( 'resize', onWindowResize, false );
-        function onWindowResize(){
-
-            // uses the global window widths and height
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize( window.innerWidth, window.innerHeight );
-        }
+        
     }
 
 

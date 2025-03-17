@@ -343,7 +343,7 @@ export default class InteriorMappingScene extends DemoBase{
     }
 
     globalTime = 0;
-    timeManager: THREE.Clock = new THREE.Clock();
+    timeManagert: THREE.Clock = new THREE.Clock();
     update(){
         this.camera.updateProjectionMatrix();
        
@@ -356,7 +356,7 @@ export default class InteriorMappingScene extends DemoBase{
        
         this.renderer.render(this.group, this.camera);
         
-        this.globalTime = (this.globalTime +  this.timeManager.getDelta() * 0.1) % 1.0;
+        this.globalTime = (this.globalTime +  this.timeManagert.getDelta() * 0.1) % 1.0;
 
         this.group.traverse((x)=>{
             if(x instanceof THREE.Light){
