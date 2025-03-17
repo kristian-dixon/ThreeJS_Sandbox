@@ -1,91 +1,57 @@
 import * as THREE from 'three';
-import {GUI} from 'dat.gui';
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 import DemoBase from '../../../SceneBase';
-import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
-
 import model from "../../../shared/assets/models/smooth_suzanne.glb"
+import { OrbitalCamera } from '../../../shared/generic_scene_elements/camera';
+import { DefaultLighting } from '../../../shared/generic_scene_elements/lighting';
+import { ScreenspaceRenderTarget } from '../../../shared/generic_scene_elements/screenspace_rendertarget';
 
 /**
  * A class to set up some basic scene elements to minimize code in the
  * main execution file.
  */
 export default class LowResScene extends DemoBase{
-   
-    recieveMessage(call: string, args: any) {
-        throw new Error('Method not implemented.');
-    }
-
-    // A dat.gui class debugger that is added by default
-    gui: GUI = null;
-
     // Setups a scene camera
-    camera: THREE.PerspectiveCamera = null;
+    camera: OrbitalCamera;
 
-    // setup renderer
-    renderer: THREE.WebGLRenderer = null;
     material: THREE.ShaderMaterial = null;
 
-    width = window.innerWidth;
-    height = window.innerHeight;
 
-    sceneRenderTarget: THREE.WebGLRenderTarget;
-    copyRenderTarget: THREE.WebGLRenderTarget;
+    sceneRenderTarget: ScreenspaceRenderTarget;
+    copyRenderTarget: ScreenspaceRenderTarget;
 
     blitQuad: THREE.Mesh;
     wsQuad: THREE.Mesh;
 
-    orbitals: OrbitControls = null;
 
     scene: THREE.Scene = new THREE.Scene();
 
-    initialize(debug: boolean = true, addGridHelper: boolean = true){
-        window["scene"] = this;
-       
-        this.camera = new THREE.PerspectiveCamera(35, this.width / this.height, .1, 100);
-        this.camera.position.z = 8;
-        this.camera.lookAt(0,0,0);
+    initialize(){
+        this.camera = new OrbitalCamera(35, .1, 100, this.renderer);
+        this.camera.setTarget(new THREE.Vector3(0,0,-2.5));
+        this.camera.position.set(0,0,1);
+        this.scene.position.set(0,0,-2.5);
 
+        DefaultLighting.SetupDefaultLighting(this.scene);
         
+        this.sceneRenderTarget = new ScreenspaceRenderTarget(new THREE.Vector2(1,1));
+        this.copyRenderTarget = new ScreenspaceRenderTarget(new THREE.Vector2(1,1));
 
-        const light = new THREE.DirectionalLight(0xffffff, 5);
-        light.position.set(4, 10, 10);
-        this.scene.add(light);
-        this.scene.add(new THREE.HemisphereLight(0xffffff, 0xfdaa91, 2.0));
-
-        this.renderer = new THREE.WebGLRenderer({
-            canvas: document.getElementById("app") as HTMLCanvasElement,
-            alpha: true
-        });
-        
-        this.renderer.setSize(this.width, this.height);
-
-        this.orbitals = new OrbitControls(this.camera, this.renderer.domElement)
-
-        this.sceneRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height);
-        this.copyRenderTarget = new THREE.WebGLRenderTarget(this.width, this.height);
-        this.addWindowResizing();
-        
-        // set the background color
-        //this.background = new THREE.Color(0x9f88);
-        const geometry = new THREE.PlaneGeometry();
- 
         //Load demo model
         let gltfLoader = new GLTFLoader();
         gltfLoader.load(model, (gltf)=>{
             let bounds = new THREE.Box3().setFromObject(gltf.scene);
             let boundsSize = bounds.getSize(new THREE.Vector3())
-            let scale = 3.0/Math.max(boundsSize.x, boundsSize.y, boundsSize.z);
+            let scale = 1.0/Math.max(boundsSize.x, boundsSize.y, boundsSize.z);
 
             let center = bounds.getCenter(new THREE.Vector3());
             center = center.multiplyScalar(-scale);
             gltf.scene.position.copy(center);
             gltf.scene.scale.set(scale,scale,scale);
-            //gltf.scene.rotateY(Math.PI / 2.0)
             this.scene.add(gltf.scene);
         });
      
-
+        const geometry = new THREE.PlaneGeometry(.7,.7);
         //Load blitter
         this.blitQuad = new THREE.Mesh(geometry, new THREE.ShaderMaterial(
         {
@@ -113,7 +79,7 @@ export default class LowResScene extends DemoBase{
             depthTest: false,
             depthWrite: false
         }));
-        
+        this.blitQuad.frustumCulled = false;
         //Load low res filter that shows up on mesh
         this.wsQuad = new THREE.Mesh(geometry, new THREE.ShaderMaterial({
             vertexShader:
@@ -154,9 +120,16 @@ export default class LowResScene extends DemoBase{
             }
         }))
 
-        this.wsQuad.scale.set(2,2,1);
-        this.wsQuad.position.set(0,0,2);
-        console.log(this.camera.aspect);
+        this.copyRenderTarget.subscribeToRefresh(()=>{
+            this.wsQuad.material["uniforms"].map.value = this.copyRenderTarget.texture;
+            this.wsQuad.material["uniforms"].aspect.value = this.copyRenderTarget.renderTarget.width/this.copyRenderTarget.renderTarget.height;
+        })
+        
+        this.sceneRenderTarget.subscribeToRefresh(()=>{
+            this.blitQuad.material["uniforms"].map.value = this.sceneRenderTarget.texture;
+        })
+
+        this.wsQuad.position.set(0,0,-2.15);
         this.initStandaloneGUI();
     }
 
@@ -164,47 +137,42 @@ export default class LowResScene extends DemoBase{
 
 
     update(){
-        this.orbitals.update();
-        this.camera.updateProjectionMatrix();
-
-        
-        this.renderer.setRenderTarget(this.sceneRenderTarget);
+        this.renderer.setRenderTarget(this.sceneRenderTarget.renderTarget);
         this.renderer.render(this.scene, this.camera);
 
         this.renderer.autoClear = false;
 
-
-        this.renderer.setRenderTarget(this.copyRenderTarget);
+        this.renderer.setRenderTarget(this.copyRenderTarget.renderTarget);
         this.renderer.render(this.blitQuad, this.camera);
 
-        this.renderer.setRenderTarget(this.sceneRenderTarget);
+        this.renderer.setRenderTarget(this.sceneRenderTarget.renderTarget);
         this.renderer.render(this.wsQuad, this.camera);
 
         this.renderer.setRenderTarget(null);
         this.renderer.render(this.blitQuad, this.camera);
 
+
         this.renderer.autoClear = true;
     }
 
-    addWindowResizing()
-    {
-        let self = this;
-        window.addEventListener( 'resize', onWindowResize, false );
-        function onWindowResize(){
+    // addWindowResizing()
+    // {
+    //     let self = this;
+    //     window.addEventListener( 'resize', onWindowResize, false );
+    //     function onWindowResize(){
 
-            // uses the global window widths and height
-            self.camera.aspect = window.innerWidth / window.innerHeight;
-            self.camera.updateProjectionMatrix();
-            self.renderer.setSize( window.innerWidth, window.innerHeight );
+    //         // uses the global window widths and height
+    //         self.camera.aspect = window.innerWidth / window.innerHeight;
+    //         self.camera.updateProjectionMatrix();
+    //         self.renderer.setSize( window.innerWidth, window.innerHeight );
 
-            self.sceneRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
-            self.copyRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
-
-            self.blitQuad.material["uniforms"].map.value = self.sceneRenderTarget.texture;
-            self.wsQuad.material["uniforms"].map.value = self.copyRenderTarget.texture;
-            self.wsQuad.material["uniforms"].aspect.value = self.camera.aspect;
-        }
-    }
+    //         self.sceneRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
+    //         self.copyRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
+    //         self.blitQuad.material["uniforms"].map.value = self.sceneRenderTarget.texture;
+    //         self.wsQuad.material["uniforms"].map.value = self.copyRenderTarget.texture;
+    //         self.wsQuad.material["uniforms"].aspect.value = self.camera.aspect;
+    //     }
+    // }
 
     initStandaloneGUI(){
         //this.gui = new GUI();      
