@@ -51,7 +51,7 @@ export default class LowResScene extends DemoBase{
             this.scene.add(gltf.scene);
         });
      
-        const geometry = new THREE.PlaneGeometry(.7,.7);
+        const geometry = new THREE.PlaneGeometry(.7,.7, 32,32);
         //Load blitter
         this.blitQuad = new THREE.Mesh(geometry, new THREE.ShaderMaterial(
         {
