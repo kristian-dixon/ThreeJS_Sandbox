@@ -1,19 +1,16 @@
 import * as THREE from 'three';
-import {RGBELoader} from "three/examples/jsm/loaders/RGBELoader"
 
+import DemoBase from '../../../SceneBase';
+import { OrbitalCamera } from '../../../shared/generic_scene_elements/camera';
+import { DefaultLighting } from '../../../shared/generic_scene_elements/lighting';
 
+//Shaders
 import VertexShader from "../shaders/parallaxmapping.vs";
 import FragmentShader from "../shaders/parallaxmappingPortalCrack.fs";
 
-import DemoBase from '../../../SceneBase';
-
-import EnvironmentMap from "../../../shared/assets/textures/skyboxes/medieval_cafe_1k.hdr";
-import DisplacementTex from '../../../shared/assets/textures/normal_map/bumpyNormalMap.jpg'
-import WindowPallet from "../textures/WindowSettingsCyclePallet.png";
+//Assets
 import InteriorMap from '../../../shared/assets/textures/skyboxes/IndoorEnvironment.jpg'
 import Crack from '../textures/Crack.png'
-import { OrbitalCamera } from '../../../shared/generic_scene_elements/camera';
-import { DefaultLighting } from '../../../shared/generic_scene_elements/lighting';
 
 export default class InteriorMappingScene extends DemoBase{
 
@@ -62,60 +59,27 @@ export default class InteriorMappingScene extends DemoBase{
             }
         })
 
-        const geometry = new THREE.PlaneGeometry(0.5,0.5, 8,8);
+        const geometry = new THREE.PlaneGeometry(0.5,0.5, 32,32);
         geometry.computeTangents();
         this.plane = new THREE.Mesh(geometry, material);
 
         this.group.add(this.plane);
         this.plane.position.set(0,0,-0.5)
 
-        //this.add(this.group);
-       // this.add(new THREE.Mesh(new THREE.SphereGeometry(0.25)));
-
-        let hdri = new RGBELoader().load(EnvironmentMap, (tex)=>{
-            hdri.mapping = THREE.EquirectangularReflectionMapping
-            this.scene.background = hdri;
-            this.scene.environment = hdri;
-            material.uniforms["reflectCube"].value = hdri;
-        })
-
-        new THREE.TextureLoader().load(InteriorMap, (tex)=>{
-            this.plane.material["uniforms"]["tCube"].value = tex;
+        let textureLoader = new THREE.TextureLoader();
+        textureLoader.load(InteriorMap, (tex)=>{
             material.uniforms["tCube"].value = tex;
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            tex.generateMipmaps = true;
         });
-        new THREE.TextureLoader().load(DisplacementTex, (tex)=>{
-            material.uniforms["dispTex"].value = tex;
-            this.plane.material["uniforms"]["dispTex"].value = tex;
-            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            tex.generateMipmaps = true;
-        });
-        new THREE.TextureLoader().load(WindowPallet, (tex)=>{
-            material.uniforms["windowPallet"].value = tex;
-            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            tex.generateMipmaps = false;
-            tex.minFilter = tex.magFilter = THREE.NearestFilter;
-        });
-      
-        new THREE.TextureLoader().load(Crack, (tex)=>{
+        textureLoader.load(Crack, (tex)=>{
             material.uniforms["crack"].value = tex;
         });
-
-
     }
 
     update(){ 
         super.update();
         this.camera.update();
-        this.renderer.autoClear = false;
-        this.renderer.render(this.scene, this.camera);
-
-        this.renderer.setClearColor(new THREE.Color(1,0,0), 0.0);
-        this.renderer.clear(true, true, true);
-        
         this.renderer.render(this.group, this.camera);
-        
         this.globalTime = (this.globalTime +  this.deltaTime() * 0.025) % 1.0;
         this.plane.material["uniforms"].time.value = this.globalTime;
     }
