@@ -5,6 +5,7 @@ import LowResScene from "./demos/low_res_filter/src/lowresfilter";
 import RefractionScene from "./demos/refraction/src/refraction";
 import UVDisplacementScene from "./demos/uv_displacement/src/UV_Displacement";
 import WhiteboardDemoScene from "./demos/whiteboard/src/whiteboarddemo";
+import ScreenspaceRainDemo from "./demos/rain/screenspace_rain_demo";
 import DemoBase from "./SceneBase";
 
 let availableScenes = {
@@ -13,7 +14,8 @@ let availableScenes = {
     interior_mapping_ar:InteriorMappingARScene,
     whiteboard:WhiteboardDemoScene,
     lowresfilter:LowResScene,
-    refraction:RefractionScene
+    refraction:RefractionScene,
+    rain:ScreenspaceRainDemo
 }
 
 let scene: DemoBase = null;
