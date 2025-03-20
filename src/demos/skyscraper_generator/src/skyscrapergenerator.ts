@@ -3,7 +3,8 @@ import DemoBase from "../../../SceneBase";
 import { OrbitalCamera } from "../../../shared/generic_scene_elements/camera";
 import { DefaultLighting } from "../../../shared/generic_scene_elements/lighting";
 import { randFloat, randInt } from "three/src/math/MathUtils";
-
+import CustomShaderMaterial from "three-custom-shader-material/vanilla";
+import BuildingShaderFrag from "../shaders/frag.fs"
 export default class SkyScraperGeneratorDemo extends DemoBase
 {
     camera: OrbitalCamera;
@@ -14,17 +15,19 @@ export default class SkyScraperGeneratorDemo extends DemoBase
         segmentsMin:3,
         segmentsMax:10,
 
-        widthMin:1,
+        widthMin:2,
         widthMax:10,
-        heightMin:1,
-        heightMax:15,
-        depthMin:1,
+        heightMin:10,
+        heightMax:25,
+        depthMin:2,
         depthMax:10,
 
         spireChance: 0.3,
         expandChance:0.2,
         expandAmountMin:2.0,
         expandAmountMax:3.0,
+
+        insetChance: 0.5,
 
         taperChanceX: 0.1,
         taperChanceZ: 0.1
@@ -37,12 +40,33 @@ export default class SkyScraperGeneratorDemo extends DemoBase
         DefaultLighting.SetupDefaultLighting(this.scene);
         
         let cubeGeometry = new BoxGeometry()
-        this.mesh = new Mesh(cubeGeometry, new MeshStandardMaterial({color:'red'}));
+        this.mesh = new Mesh(cubeGeometry, new CustomShaderMaterial({
+            baseMaterial: MeshStandardMaterial,
+            vertexShader:`
+            varying vec2 vUv;
+
+            void main() {
+                vUv = uv;
+            }
+            `,
+            fragmentShader: BuildingShaderFrag
+        }));
         this.mesh.rotateY(1);
         this.scene.add(this.mesh);
         this.generateBuildingGeometry();
         
-        //this.scene.background = new Color('black')
+        this.scene.background = new Color('black')
+
+        Object.keys(this.settings).forEach((key)=>{
+
+            try{
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                this.gui.add(this.settings, (key));// key.toString());
+            }catch(e)
+            {}
+
+        })
 
         this.gui.add(this, 'generateBuildingGeometry');
     }
@@ -73,7 +97,7 @@ export default class SkyScraperGeneratorDemo extends DemoBase
 
             let topWidth = Math.random() < this.settings.taperChanceX ? randFloat(width - this.settings.widthMin, width + expansion) : width;
             let topDepth = Math.random() < this.settings.taperChanceZ ? randFloat(depth - this.settings.depthMin, width + expansion) : width;
-            let height = randFloat(this.settings.heightMax - this.settings.heightMin, this.settings.heightMax);
+            let height = randFloat(this.settings.heightMin, this.settings.heightMax);
 
             vertices.push(
                 //Front wall -z
@@ -106,8 +130,6 @@ export default class SkyScraperGeneratorDemo extends DemoBase
                 {pos:[ topWidth, floorHeight + height,  topDepth], uv:[1,1], normal:[0,1,0]},
                 {pos:[ topWidth, floorHeight + height, -topDepth], uv:[0,1], normal:[0,1,0]},
             );
-
-            
 
             indices.push(
                 i * vertexCountPerSegment + 0 + 0,
@@ -150,14 +172,15 @@ export default class SkyScraperGeneratorDemo extends DemoBase
             width = topWidth;
             depth = topDepth;
 
-            if(Math.random() < 0.85)
+            if(Math.random() < this.settings.insetChance)
             {
                 width = randFloat(width - this.settings.widthMin, width);
                 depth = randFloat(depth - this.settings.depthMin, depth);
             }
-           
-        }
 
+            width = Math.max(2 + Math.random(),width);
+            depth = Math.max(2 + Math.random(),depth);
+        }
 
         let positions=[];
         let normals=[];
@@ -169,11 +192,10 @@ export default class SkyScraperGeneratorDemo extends DemoBase
             uvs.push(...vertex.uv)
         }
 
-
         let geometry = new BufferGeometry();
         geometry.setAttribute("position", new BufferAttribute(new Float32Array(positions), 3));
         geometry.setAttribute("normal", new BufferAttribute(new Float32Array(normals), 3));
-        geometry.setAttribute("uvs", new BufferAttribute(new Float32Array(uvs), 2));
+        geometry.setAttribute("uv", new BufferAttribute(new Float32Array(uvs), 2));
         geometry.setIndex(indices)
 
         this.mesh.geometry = geometry;
