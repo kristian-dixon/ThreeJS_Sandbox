@@ -1,9 +1,10 @@
-import { BoxGeometry, BufferAttribute, BufferGeometry, Color, Mesh, MeshBasicMaterial, MeshLambertMaterial, MeshStandardMaterial, Scene } from "three";
+import { BoxGeometry, BufferAttribute, BufferGeometry, Color, Mesh, MeshBasicMaterial, MeshLambertMaterial, MeshStandardMaterial, Scene, Vector3 } from "three";
 import DemoBase from "../../../SceneBase";
 import { OrbitalCamera } from "../../../shared/generic_scene_elements/camera";
 import { DefaultLighting } from "../../../shared/generic_scene_elements/lighting";
 import { randFloat, randInt } from "three/src/math/MathUtils";
 import CustomShaderMaterial from "three-custom-shader-material/vanilla";
+import BuildingShaderVert from "../shaders/vert.vs"
 import BuildingShaderFrag from "../shaders/frag.fs"
 export default class SkyScraperGeneratorDemo extends DemoBase
 {
@@ -36,19 +37,14 @@ export default class SkyScraperGeneratorDemo extends DemoBase
     initialize() {
         this.scene = new Scene();
         this.camera = new OrbitalCamera(40,0.01,1000, this.renderer);
-        this.camera.position.set(0,5,10)
+        this.camera.position.set(0,50,100);
+        this.camera.controls.target = new Vector3(0,40,0);
         DefaultLighting.SetupDefaultLighting(this.scene);
         
         let cubeGeometry = new BoxGeometry()
         this.mesh = new Mesh(cubeGeometry, new CustomShaderMaterial({
             baseMaterial: MeshStandardMaterial,
-            vertexShader:`
-            varying vec2 vUv;
-
-            void main() {
-                vUv = uv;
-            }
-            `,
+            vertexShader: BuildingShaderVert,
             fragmentShader: BuildingShaderFrag
         }));
         this.mesh.rotateY(1);
@@ -58,14 +54,9 @@ export default class SkyScraperGeneratorDemo extends DemoBase
         this.scene.background = new Color('black')
 
         Object.keys(this.settings).forEach((key)=>{
-
-            try{
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                this.gui.add(this.settings, (key));// key.toString());
-            }catch(e)
-            {}
-
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            this.gui.add(this.settings, (key));
         })
 
         this.gui.add(this, 'generateBuildingGeometry');
