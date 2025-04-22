@@ -78,7 +78,8 @@ export default class SkyScraperGeneratorDemo extends DemoBase
             material.uniforms["interiorMap"].value = tex;
         })
         
-        this.scene.background = new Color('black')
+        if(window.top == window.self)
+            this.scene.background = new Color('black')
 
         Object.keys(this.settings).forEach((key)=>{
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
