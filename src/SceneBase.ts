@@ -29,10 +29,20 @@ export default abstract class DemoBase
         let vrButton = VRButton.createButton(this.renderer);
         
         this.events.addEventListener("AR_REQUESTED", ()=>{
+            if(arButton.textContent != "START AR")
+            {
+                alert("AR session cannot be started. Please ensure your device supports rendering WebXR AR content and that the page has permission to use WebXR.");
+            }
+
             arButton.click();
         })
 
         this.events.addEventListener("VR_REQUESTED", ()=>{
+            if(vrButton.textContent != "START VR")
+            {
+                alert("VR session cannot be started. Please ensure your device supports rendering WebXR VR content and that the page has permission to use WebXR.");
+            }
+
             vrButton.click();
         })
 
