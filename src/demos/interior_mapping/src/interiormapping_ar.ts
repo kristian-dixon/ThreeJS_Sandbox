@@ -77,7 +77,7 @@ export default class InteriorMappingScene extends DemoBase{
                 this.group.position.set(0,1.25,-1);
             }
 
-            if(evt.message.targetState === XRState.RunningVR)
+            if(evt.message.targetState === XRState.ExitVR)
             {
                 this.group.position.set(0,0,0);
             }

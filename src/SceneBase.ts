@@ -122,8 +122,6 @@ export default abstract class DemoBase
 
     private SetXRState(state:XRState)
     {
-        console.log("Changing XR State: ", this.xrState);
-
         if(this.xrState === state)
             return;
 
