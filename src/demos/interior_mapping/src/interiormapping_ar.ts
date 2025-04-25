@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import DemoBase from '../../../SceneBase';
+import DemoBase, { XRState } from '../../../SceneBase';
 import { OrbitalCamera } from '../../../shared/generic_scene_elements/camera';
 import { DefaultLighting } from '../../../shared/generic_scene_elements/lighting';
 
@@ -70,6 +70,18 @@ export default class InteriorMappingScene extends DemoBase{
         textureLoader.load(Crack, (tex)=>{
             material.uniforms["crack"].value = tex;
         });
+
+        this.events.addEventListener("XR_StateChanged", (evt)=>{
+            if(evt.message.targetState === XRState.RunningVR)
+            {
+                this.group.position.set(0,1.25,-1);
+            }
+
+            if(evt.message.targetState === XRState.RunningVR)
+            {
+                this.group.position.set(0,0,0);
+            }
+        })
     }
 
     update(){ 

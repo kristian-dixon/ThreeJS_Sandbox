@@ -3,6 +3,17 @@ import * as THREE from 'three';
 import {ARButton} from 'three/examples/jsm/webxr/ARButton.js';
 import {VRButton} from 'three/examples/jsm/webxr/VRButton.js';
 
+export enum XRState
+{
+    NONE = "NONE",
+    PendingAR = "PendingAR",
+    PendingVR = "PendingVR",
+    RunningAR = "RunningAR",
+    RunningVR = "RunningVR",
+    ExitAR = "ExitAR",
+    ExitVR = "ExitVR"
+}
+
 export default abstract class DemoBase
 {
     renderer: THREE.WebGLRenderer;
@@ -11,6 +22,8 @@ export default abstract class DemoBase
 
     private timeManager: THREE.Clock;
     private dt: number=0;
+
+    private xrState = XRState.NONE;
 
     constructor(){
         this.events = new THREE.EventDispatcher();
@@ -31,18 +44,22 @@ export default abstract class DemoBase
         this.events.addEventListener("AR_REQUESTED", ()=>{
             if(arButton.textContent != "START AR")
             {
-                alert("AR session cannot be started. Please ensure your device supports rendering WebXR AR content and that the page has permission to use WebXR.");
+                alert("AR session cannot be started. \nPlease ensure your device supports rendering WebXR AR content and that the page has permission to use WebXR.");
+                return;
             }
 
+            this.SetXRState(XRState.PendingAR);
             arButton.click();
         })
 
         this.events.addEventListener("VR_REQUESTED", ()=>{
-            if(vrButton.textContent != "START VR")
+            if(vrButton.textContent != "ENTER VR")
             {
-                alert("VR session cannot be started. Please ensure your device supports rendering WebXR VR content and that the page has permission to use WebXR.");
+                alert("VR session cannot be started. \nPlease ensure your device supports rendering WebXR VR content and that the page has permission to use WebXR.");
+                return;
             }
 
+            this.SetXRState(XRState.PendingVR);
             vrButton.click();
         })
 
@@ -61,6 +78,8 @@ export default abstract class DemoBase
         function onWindowResize(){
             self.renderer.setSize( window.innerWidth, window.innerHeight );
         }
+
+        window["DemoApp"] = this;
     }
 
     abstract initialize(options?:any);
@@ -68,6 +87,29 @@ export default abstract class DemoBase
     update(options?:any)
     {
         this.dt = this.timeManager.getDelta();
+
+        //XR State management
+        if(this.renderer.xr.isPresenting)
+        {
+            if(this.xrState === XRState.PendingAR)
+            {
+                this.SetXRState(XRState.RunningAR);
+            }
+
+            if(this.xrState === XRState.PendingVR)
+            {
+                this.SetXRState(XRState.RunningVR);
+            }
+        }
+        else if(this.xrState == XRState.RunningAR)
+        {
+            this.SetXRState(XRState.ExitAR);
+        }
+        else if(this.xrState == XRState.RunningVR)
+        {
+            this.SetXRState(XRState.ExitVR);
+        }
+        
     }
 
     recieveMessage(call: string, args: any) {
@@ -76,5 +118,18 @@ export default abstract class DemoBase
 
     getDeltaTime():number{
         return this.dt;
+    }
+
+    private SetXRState(state:XRState)
+    {
+        console.log("Changing XR State: ", this.xrState);
+
+        if(this.xrState === state)
+            return;
+
+        let previousState = this.xrState;
+        this.xrState = state;
+
+        this.events.dispatchEvent({type:"XR_StateChanged", message:{previousState:previousState, targetState:state}})
     }
 }
