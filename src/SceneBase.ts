@@ -96,7 +96,7 @@ export default abstract class DemoBase
                 this.SetXRState(XRState.RunningAR);
             }
 
-            if(this.xrState === XRState.PendingVR)
+            if(this.xrState === XRState.PendingVR || this.xrState == XRState.NONE)
             {
                 this.SetXRState(XRState.RunningVR);
             }
