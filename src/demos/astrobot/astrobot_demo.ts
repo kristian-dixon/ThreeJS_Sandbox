@@ -23,7 +23,7 @@ export class AstrobotSphereDemo extends DemoBase
     spring = 
     {
         strength: 1.105,
-        dampen: 1.0,//0.99,
+        dampen: 0.99,
         velocity: new THREE.Vector3(0,0,0),
         position: new THREE.Vector3(0.5,0,0),
         anchorPosition: new THREE.Vector3(0.25,0,0),

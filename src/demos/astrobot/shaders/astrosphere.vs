@@ -13,17 +13,22 @@ void main()	{
     
     vec3 distortedPosition = position;
     float distortionStrength = 0.0;
-
-    float impactAngle = dot(normalize(position), impactNormal);
-    impactAngle = 1.0 - clamp(impactAngle, 0.0,1.0);
-
-    float impact = pow(cos(PI * impactAngle / 2.0),3.0);
-
-    distortionStrength = (impact * impactDepth * (1.0 - impactAngle));
-
+    vec3 impactPos = impactNormal * 0.25 + impactDepth * impactNormal;
+    vec3 dirToImpact = normalize(impactPos - position);
 
     
-    distortedPosition += impactNormal * distortionStrength;
+    //
+    float entryDist = length(position - impactNormal * 0.25);
+
+    distortionStrength = smoothstep(abs(impactDepth), 0.0, entryDist) * 0.5;
+    distortionStrength += smoothstep(abs(impactDepth) * 10.0, abs(impactDepth), entryDist) * 0.5;
+   
+    distortedPosition += impactNormal * impactDepth * distortionStrength;
+    
+
+
+    //distortedPosition += dirToImpact * distortionStrength;
+    
     
 
 
