@@ -16,22 +16,21 @@ void main() {
     
     vec4 colour = vec4(1,1,1,1);
 
-    float light = 0.0;
-
     float y = (vUv.y - vMetadata.w) / vMetadata.z;
-
     float width = mix(vMetadata.x, vMetadata.y, y);
     float x = (vUv.x+width)/(width*2.0);
     
     float wpf = 8.0;
-    vec2 uv = fract(vec2(x,y) * wpf);//, y * vMetadata.z * 0.5));
+    vec2 uv = fract(vec2(x,y) * wpf);
     float rng = random(floor(vec2(x,y)*wpf+vec2(floor(vMetadata.w))));
     uv = (uv*2.0)-1.0;
     uv = abs(uv);
     
-    float windowSurface = step(uv.x, 0.5) * step(uv.y, 0.5) * (1.0-vObjNormal.y);
-    
+    float windowSurface = smoothstep(0.5, 0.45, uv.x) * smoothstep(0.5, 0.4, uv.y) * (1.0-vObjNormal.y);
+ 
     vec3 surfaceColour = vec3(1.0,1.0,1.0) * 0.1;
+    surfaceColour *= (1.0-(smoothstep(0.7,0.6,uv.x) * smoothstep(0.7,0.6,uv.y))) * (1.0-vObjNormal.y);
+    
     vec3 windowColour = vec3(0.9) * pow(rng,2.0);
 
     csm_DiffuseColor = vec4(mix(surfaceColour, windowColour, windowSurface),1.0);

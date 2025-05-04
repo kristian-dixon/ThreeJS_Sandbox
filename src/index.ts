@@ -26,7 +26,7 @@ const urlParams = new URLSearchParams(window.location.search);
 let demo = urlParams.get("demo");
 if(!demo)
 {
-    demo = "interior_mapping_ar";
+    demo = "skyscraper_generator";
 }
 
 scene = new availableScenes[demo]();

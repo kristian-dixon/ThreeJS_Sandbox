@@ -22,12 +22,9 @@ export default class SkyScraperGeneratorDemo extends DemoBase
         iterationsMin:3,
         iterationsMax:5,
 
-        initalWidth:10,
-        widthMaxChange:2,
-
-        initialDepth:10,
-        depthMaxChange:2,
-
+        initialScale: 10.0,
+        perSegmentScaleChange: 2.0,
+        matchWidthAndDepthChance: 1.0,
 
         heightMin:10,
         heightMax:15,
@@ -38,8 +35,9 @@ export default class SkyScraperGeneratorDemo extends DemoBase
 
         insetChance: 0.25,
 
-        taperChanceX: 0.1,
-        taperChanceZ: 0.1
+        taperChance:0.1,
+
+        spireChance:0.2
     }
 
     initialize() {
@@ -108,11 +106,20 @@ export default class SkyScraperGeneratorDemo extends DemoBase
         let indices = [];
 
         let segmentCount = randInt(this.settings.iterationsMin, this.settings.iterationsMax);
-        let width =  randFloat(this.settings.initalWidth - this.settings.widthMaxChange, this.settings.initalWidth);
-        let depth =  randFloat(this.settings.initialDepth - this.settings.depthMaxChange, this.settings.initialDepth);
+
+        let width =  randFloat(this.settings.initialScale - this.settings.perSegmentScaleChange, this.settings.perSegmentScaleChange);
+        let depth =  randFloat(this.settings.initialScale - this.settings.perSegmentScaleChange, this.settings.perSegmentScaleChange);
+        if(randFloat(0.0,1.0) < this.settings.matchWidthAndDepthChance)
+        {
+            depth = width;
+        }
+
 
         let floorHeight = 0;
         let vertexCountPerSegment = 20;
+
+        let addSpire = randFloat(0.0,1.0) < this.settings.spireChance;
+
         for(let i = 0; i < segmentCount; i++)
         {
             let expansion = 0;
@@ -121,8 +128,13 @@ export default class SkyScraperGeneratorDemo extends DemoBase
                 expansion = randFloat(this.settings.expandAmountMin, this.settings.expandAmountMax);
             }
 
-            let topWidth = Math.random() < this.settings.taperChanceX ? randFloat(width - this.settings.widthMaxChange, width + expansion) : width;
-            let topDepth = Math.random() < this.settings.taperChanceZ ? randFloat(depth - this.settings.depthMaxChange, depth + expansion) : depth;
+            let topWidth = Math.random() < this.settings.taperChance ? randFloat(width - this.settings.perSegmentScaleChange, width + expansion) : width;
+            let topDepth = Math.random() < this.settings.taperChance ? randFloat(depth - this.settings.perSegmentScaleChange, depth + expansion) : depth;
+            if(randFloat(0.0,1.0) < this.settings.matchWidthAndDepthChance)
+            {
+                topDepth = topWidth;
+            }
+
             let height = randFloat(this.settings.heightMin, this.settings.heightMax);
 
             width = Math.abs(width);
@@ -130,74 +142,7 @@ export default class SkyScraperGeneratorDemo extends DemoBase
             topDepth = Math.abs(topDepth);
             topWidth = Math.abs(topWidth);
             
-            vertices.push(
-                //Front wall -z
-                {pos:[    width, floorHeight,          -depth],    uv:[width,floorHeight],              normal:[0,0,-1], segmentMetaData:[width,topWidth,height,floorHeight]},
-                {pos:[   -width, floorHeight,          -depth],    uv:[-width,floorHeight],             normal:[0,0,-1], segmentMetaData:[width,topWidth,height,floorHeight]},
-                {pos:[-topWidth, floorHeight + height, -topDepth], uv:[-topWidth,floorHeight + height], normal:[0,0,-1], segmentMetaData:[width,topWidth,height,floorHeight]},
-                {pos:[ topWidth, floorHeight + height, -topDepth], uv:[topWidth,floorHeight + height],  normal:[0,0,-1], segmentMetaData:[width,topWidth,height,floorHeight]},
-
-                //Left wall -x
-                {pos:[   -width, floorHeight,          -depth],    uv:[-depth,floorHeight],              normal:[-1,0,0], segmentMetaData:[depth,topDepth,height,floorHeight]},
-                {pos:[   -width, floorHeight,           depth],    uv:[depth,floorHeight],             normal:[-1,0,0], segmentMetaData:[depth,topDepth,height,floorHeight]},
-                {pos:[-topWidth, floorHeight + height,  topDepth], uv:[topDepth,floorHeight + height], normal:[-1,0,0], segmentMetaData:[depth,topDepth,height,floorHeight]},
-                {pos:[-topWidth, floorHeight + height, -topDepth], uv:[-topDepth,floorHeight + height],  normal:[-1,0,0], segmentMetaData:[depth,topDepth,height,floorHeight]},
-
-                //Back wall +z
-                {pos:[   -width, floorHeight,           depth],    uv:[-width,floorHeight],              normal:[ 0,0,1], segmentMetaData:[width,topWidth,height,floorHeight]},
-                {pos:[    width, floorHeight,           depth],    uv:[width,floorHeight],             normal:[ 0,0,1], segmentMetaData:[width,topWidth,height,floorHeight]},
-                {pos:[ topWidth, floorHeight + height,  topDepth], uv:[topWidth,floorHeight + height], normal:[ 0,0,1], segmentMetaData:[width,topWidth,height,floorHeight]},
-                {pos:[-topWidth, floorHeight + height,  topDepth], uv:[-topWidth,floorHeight + height],  normal:[ 0,0,1], segmentMetaData:[width,topWidth,height,floorHeight]},
-
-                //Right wall +x 
-                {pos:[    width, floorHeight,           depth],    uv:[depth,floorHeight],              normal:[ 1,0,0], segmentMetaData:[depth,topDepth,height,floorHeight]},
-                {pos:[    width, floorHeight,          -depth],    uv:[-depth,floorHeight],             normal:[ 1,0,0], segmentMetaData:[depth,topDepth,height,floorHeight]},
-                {pos:[ topWidth, floorHeight + height, -topDepth], uv:[-topDepth,floorHeight + height], normal:[ 1,0,0], segmentMetaData:[depth,topDepth,height,floorHeight]},
-                {pos:[ topWidth, floorHeight + height,  topDepth], uv:[topDepth,floorHeight + height],  normal:[ 1,0,0], segmentMetaData:[depth,topDepth,height,floorHeight]},
-
-                //Top Group 
-                {pos:[-topWidth, floorHeight + height, -topDepth], uv:[0,0], normal:[ 0,1,0], segmentMetaData:[width,topWidth,height,floorHeight]},
-                {pos:[-topWidth, floorHeight + height,  topDepth], uv:[1,0], normal:[ 0,1,0], segmentMetaData:[width,topWidth,height,floorHeight]},
-                {pos:[ topWidth, floorHeight + height,  topDepth], uv:[1,1], normal:[ 0,1,0], segmentMetaData:[width,topWidth,height,floorHeight]},
-                {pos:[ topWidth, floorHeight + height, -topDepth], uv:[0,1], normal:[ 0,1,0], segmentMetaData:[width,topWidth,height,floorHeight]},
-            );
-
-            indices.push(
-                i * vertexCountPerSegment + 0 + 0,
-                i * vertexCountPerSegment + 1 + 0,
-                i * vertexCountPerSegment + 2 + 0,
-                i * vertexCountPerSegment + 2 + 0,
-                i * vertexCountPerSegment + 3 + 0,
-                i * vertexCountPerSegment + 0 + 0,
-
-                i * vertexCountPerSegment + 0 + 4,
-                i * vertexCountPerSegment + 1 + 4,
-                i * vertexCountPerSegment + 2 + 4,
-                i * vertexCountPerSegment + 2 + 4,
-                i * vertexCountPerSegment + 3 + 4,
-                i * vertexCountPerSegment + 0 + 4,
-
-                i * vertexCountPerSegment + 0 + 8,
-                i * vertexCountPerSegment + 1 + 8,
-                i * vertexCountPerSegment + 2 + 8,
-                i * vertexCountPerSegment + 2 + 8,
-                i * vertexCountPerSegment + 3 + 8,
-                i * vertexCountPerSegment + 0 + 8,
-
-                i * vertexCountPerSegment + 0 + 12,
-                i * vertexCountPerSegment + 1 + 12,
-                i * vertexCountPerSegment + 2 + 12,
-                i * vertexCountPerSegment + 2 + 12,
-                i * vertexCountPerSegment + 3 + 12,
-                i * vertexCountPerSegment + 0 + 12,
-
-                i * vertexCountPerSegment + 0 + 16,
-                i * vertexCountPerSegment + 1 + 16,
-                i * vertexCountPerSegment + 2 + 16,
-                i * vertexCountPerSegment + 2 + 16,
-                i * vertexCountPerSegment + 3 + 16,
-                i * vertexCountPerSegment + 0 + 16,
-            )
+            this.createMeshForSegment(vertices, width, floorHeight, depth, topWidth, height, topDepth, indices, i, vertexCountPerSegment);
 
             floorHeight += height;
             width = topWidth;
@@ -205,14 +150,24 @@ export default class SkyScraperGeneratorDemo extends DemoBase
 
             if(Math.random() < this.settings.insetChance)
             {
-                width = randFloat(width - this.settings.widthMaxChange, width);
-                depth = randFloat(depth - this.settings.depthMaxChange, depth);
+                width = randFloat(width - this.settings.perSegmentScaleChange, width);
+                depth = randFloat(depth - this.settings.perSegmentScaleChange, depth);
+
+                if(randFloat(0.0,1.0) < this.settings.matchWidthAndDepthChance)
+                {
+                    depth = width;
+                }
             }
 
             width = Math.max(2 + Math.random(),width);
             depth = Math.max(2 + Math.random(),depth);
         }
 
+        if(addSpire)
+        {
+            this.createMeshForSegment(vertices, 0.1, floorHeight, 0.1, 0.1, randFloat(2.0,5.0), 0.1, indices, segmentCount, vertexCountPerSegment);
+        }
+            
         let positions=[];
         let normals=[];
         let uvs=[];
@@ -235,6 +190,77 @@ export default class SkyScraperGeneratorDemo extends DemoBase
         geometry.computeTangents();
 
         this.mesh.geometry = geometry;
+    }
+
+    private createMeshForSegment(vertices: any[], width: number, floorHeight: number, depth: number, topWidth: number, height: number, topDepth: number, indices: any[], i: number, vertexCountPerSegment: number) {
+        vertices.push(
+            //Front wall -z
+            { pos: [width, floorHeight, -depth], uv: [width, floorHeight], normal: [0, 0, -1], segmentMetaData: [width, topWidth, height, floorHeight] },
+            { pos: [-width, floorHeight, -depth], uv: [-width, floorHeight], normal: [0, 0, -1], segmentMetaData: [width, topWidth, height, floorHeight] },
+            { pos: [-topWidth, floorHeight + height, -topDepth], uv: [-topWidth, floorHeight + height], normal: [0, 0, -1], segmentMetaData: [width, topWidth, height, floorHeight] },
+            { pos: [topWidth, floorHeight + height, -topDepth], uv: [topWidth, floorHeight + height], normal: [0, 0, -1], segmentMetaData: [width, topWidth, height, floorHeight] },
+
+            //Left wall -x
+            { pos: [-width, floorHeight, -depth], uv: [-depth, floorHeight], normal: [-1, 0, 0], segmentMetaData: [depth, topDepth, height, floorHeight] },
+            { pos: [-width, floorHeight, depth], uv: [depth, floorHeight], normal: [-1, 0, 0], segmentMetaData: [depth, topDepth, height, floorHeight] },
+            { pos: [-topWidth, floorHeight + height, topDepth], uv: [topDepth, floorHeight + height], normal: [-1, 0, 0], segmentMetaData: [depth, topDepth, height, floorHeight] },
+            { pos: [-topWidth, floorHeight + height, -topDepth], uv: [-topDepth, floorHeight + height], normal: [-1, 0, 0], segmentMetaData: [depth, topDepth, height, floorHeight] },
+
+            //Back wall +z
+            { pos: [-width, floorHeight, depth], uv: [-width, floorHeight], normal: [0, 0, 1], segmentMetaData: [width, topWidth, height, floorHeight] },
+            { pos: [width, floorHeight, depth], uv: [width, floorHeight], normal: [0, 0, 1], segmentMetaData: [width, topWidth, height, floorHeight] },
+            { pos: [topWidth, floorHeight + height, topDepth], uv: [topWidth, floorHeight + height], normal: [0, 0, 1], segmentMetaData: [width, topWidth, height, floorHeight] },
+            { pos: [-topWidth, floorHeight + height, topDepth], uv: [-topWidth, floorHeight + height], normal: [0, 0, 1], segmentMetaData: [width, topWidth, height, floorHeight] },
+
+            //Right wall +x 
+            { pos: [width, floorHeight, depth], uv: [depth, floorHeight], normal: [1, 0, 0], segmentMetaData: [depth, topDepth, height, floorHeight] },
+            { pos: [width, floorHeight, -depth], uv: [-depth, floorHeight], normal: [1, 0, 0], segmentMetaData: [depth, topDepth, height, floorHeight] },
+            { pos: [topWidth, floorHeight + height, -topDepth], uv: [-topDepth, floorHeight + height], normal: [1, 0, 0], segmentMetaData: [depth, topDepth, height, floorHeight] },
+            { pos: [topWidth, floorHeight + height, topDepth], uv: [topDepth, floorHeight + height], normal: [1, 0, 0], segmentMetaData: [depth, topDepth, height, floorHeight] },
+
+            //Top Group 
+            { pos: [-topWidth, floorHeight + height, -topDepth], uv: [0, 0], normal: [0, 1, 0], segmentMetaData: [width, topWidth, height, floorHeight] },
+            { pos: [-topWidth, floorHeight + height, topDepth], uv: [1, 0], normal: [0, 1, 0], segmentMetaData: [width, topWidth, height, floorHeight] },
+            { pos: [topWidth, floorHeight + height, topDepth], uv: [1, 1], normal: [0, 1, 0], segmentMetaData: [width, topWidth, height, floorHeight] },
+            { pos: [topWidth, floorHeight + height, -topDepth], uv: [0, 1], normal: [0, 1, 0], segmentMetaData: [width, topWidth, height, floorHeight] }
+        );
+
+        indices.push(
+            i * vertexCountPerSegment + 0 + 0,
+            i * vertexCountPerSegment + 1 + 0,
+            i * vertexCountPerSegment + 2 + 0,
+            i * vertexCountPerSegment + 2 + 0,
+            i * vertexCountPerSegment + 3 + 0,
+            i * vertexCountPerSegment + 0 + 0,
+
+            i * vertexCountPerSegment + 0 + 4,
+            i * vertexCountPerSegment + 1 + 4,
+            i * vertexCountPerSegment + 2 + 4,
+            i * vertexCountPerSegment + 2 + 4,
+            i * vertexCountPerSegment + 3 + 4,
+            i * vertexCountPerSegment + 0 + 4,
+
+            i * vertexCountPerSegment + 0 + 8,
+            i * vertexCountPerSegment + 1 + 8,
+            i * vertexCountPerSegment + 2 + 8,
+            i * vertexCountPerSegment + 2 + 8,
+            i * vertexCountPerSegment + 3 + 8,
+            i * vertexCountPerSegment + 0 + 8,
+
+            i * vertexCountPerSegment + 0 + 12,
+            i * vertexCountPerSegment + 1 + 12,
+            i * vertexCountPerSegment + 2 + 12,
+            i * vertexCountPerSegment + 2 + 12,
+            i * vertexCountPerSegment + 3 + 12,
+            i * vertexCountPerSegment + 0 + 12,
+
+            i * vertexCountPerSegment + 0 + 16,
+            i * vertexCountPerSegment + 1 + 16,
+            i * vertexCountPerSegment + 2 + 16,
+            i * vertexCountPerSegment + 2 + 16,
+            i * vertexCountPerSegment + 3 + 16,
+            i * vertexCountPerSegment + 0 + 16
+        );
     }
 
     update(options?: any): void {
