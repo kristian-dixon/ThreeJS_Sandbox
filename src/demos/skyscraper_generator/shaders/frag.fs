@@ -2,7 +2,6 @@ varying vec2 vUv;
 varying vec3 vObjNormal;
 varying vec4 vMetadata;
 
-
 uniform sampler2D interiorMap;
 
 float random(vec2 st) {
@@ -10,7 +9,6 @@ float random(vec2 st) {
         vec2(12.9898, 78.233))) *
         43758.5453123);
 }
-
 
 void main() {
     
@@ -26,7 +24,7 @@ void main() {
     uv = (uv*2.0)-1.0;
     uv = abs(uv);
     
-    float windowSurface = smoothstep(0.5, 0.45, uv.x) * smoothstep(0.5, 0.4, uv.y) * (1.0-vObjNormal.y);
+    float windowSurface = smoothstep(0.5, 0.48, uv.x) * smoothstep(0.5, 0.48, uv.y) * (1.0-vObjNormal.y);
  
     vec3 surfaceColour = vec3(1.0,1.0,1.0) * 0.1;
     surfaceColour *= (1.0-(smoothstep(0.7,0.6,uv.x) * smoothstep(0.7,0.6,uv.y))) * (1.0-vObjNormal.y);
