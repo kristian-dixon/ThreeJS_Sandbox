@@ -79,6 +79,7 @@ export default class SkyScraperGeneratorDemo extends DemoBase
         if(window.top == window.self)
             this.scene.background = new Color('black')
 
+        let self = this;
         Object.keys(this.settings).forEach((key)=>{
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
@@ -88,11 +89,19 @@ export default class SkyScraperGeneratorDemo extends DemoBase
                     this.generateBuildingGeometry();
                 }
             });
+
+            self.events.addEventListener("set:" + key, (evt)=>{
+                self.settings[key] = evt.message;
+            })
+
         })
 
         this.gui.add(this, 'autoApply');
-
         this.gui.add(this, 'generateBuildingGeometry');
+
+        self.events.addEventListener("generate", (evt)=>{
+            self.generateBuildingGeometry();
+        })
     }
 
     generateBuildingGeometry()
@@ -107,13 +116,12 @@ export default class SkyScraperGeneratorDemo extends DemoBase
 
         let segmentCount = randInt(this.settings.iterationsMin, this.settings.iterationsMax);
 
-        let width =  randFloat(this.settings.initialScale - this.settings.perSegmentScaleChange, this.settings.perSegmentScaleChange);
-        let depth =  randFloat(this.settings.initialScale - this.settings.perSegmentScaleChange, this.settings.perSegmentScaleChange);
+        let width = randFloat(this.settings.initialScale - this.settings.perSegmentScaleChange, this.settings.perSegmentScaleChange);
+        let depth = randFloat(this.settings.initialScale - this.settings.perSegmentScaleChange, this.settings.perSegmentScaleChange);
         if(randFloat(0.0,1.0) < this.settings.matchWidthAndDepthChance)
         {
             depth = width;
         }
-
 
         let floorHeight = 0;
         let vertexCountPerSegment = 20;
