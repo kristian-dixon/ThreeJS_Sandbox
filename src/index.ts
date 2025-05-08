@@ -7,6 +7,7 @@ import UVDisplacementScene from "./demos/uv_displacement/src/UV_Displacement";
 import WhiteboardDemoScene from "./demos/whiteboard/src/whiteboarddemo";
 import ScreenspaceRainDemo from "./demos/rain/screenspace_rain_demo";
 import DemoBase from "./SceneBase";
+import { SteepParallaxDemo } from "./demos/steep_parallax/steep_parallax";
 
 let availableScenes = {
     uv_displacement:UVDisplacementScene,
@@ -15,7 +16,8 @@ let availableScenes = {
     whiteboard:WhiteboardDemoScene,
     lowresfilter:LowResScene,
     refraction:RefractionScene,
-    rain:ScreenspaceRainDemo
+    rain:ScreenspaceRainDemo,
+    steep_parallax:SteepParallaxDemo
 }
 
 let scene: DemoBase = null;
@@ -24,7 +26,7 @@ const urlParams = new URLSearchParams(window.location.search);
 let demo = urlParams.get("demo");
 if(!demo)
 {
-    demo = "interior_mapping_ar";
+    demo = "steep_parallax";
 }
 
 scene = new availableScenes[demo]();
