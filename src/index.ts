@@ -7,6 +7,7 @@ import UVDisplacementScene from "./demos/uv_displacement/src/UV_Displacement";
 import WhiteboardDemoScene from "./demos/whiteboard/src/whiteboarddemo";
 import ScreenspaceRainDemo from "./demos/rain/screenspace_rain_demo";
 import DemoBase from "./SceneBase";
+import SkyScraperGeneratorDemo from "./demos/skyscraper_generator/src/skyscrapergenerator";
 import { SteepParallaxDemo } from "./demos/steep_parallax/steep_parallax";
 
 let availableScenes = {
@@ -46,7 +47,7 @@ window.addEventListener('message', function (event) {
     }
 }, false);
 
-scene["renderer"].setAnimationLoop(loop);
+scene.renderer.setAnimationLoop(loop);
 // loops updates
 function loop() {
     // scene.camera.updateProjectionMatrix();
