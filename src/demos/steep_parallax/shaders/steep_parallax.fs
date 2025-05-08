@@ -7,15 +7,19 @@ uniform sampler2D NormalMap;
 uniform float BumpScale;
 
 void main()	{ 
-    const float numSteps = 30.0;
+    float numSteps = 60.0;
     float height = 1.0,step = 1.0/numSteps;
 
     vec2 offset = vUv;
 
     vec4 NB = texture2D(NormalMap, offset);
-    vec2 delta = vec2(-vTSEyeDir.x, vTSEyeDir.y) * BumpScale / (-vTSEyeDir.z * numSteps);
 
-    while(NB.a < height)
+    vec3 eyeDir = normalize(vTSEyeDir);
+
+    numSteps = mix(numSteps * 2.0, numSteps, eyeDir.z);
+    vec2 delta = vec2(eyeDir.x, eyeDir.y) * BumpScale / (eyeDir.z * numSteps);
+
+    while( NB.a < height)
     {
         height -= step;
         offset += delta;
@@ -25,6 +29,6 @@ void main()	{
 
     gl_FragColor = texture2D(AlbedoMap, offset);
 
-    gl_FragColor = vec4(abs(vTSEyeDir), 1.0);
+    //gl_FragColor = vec4(abs(vTSEyeDir), 1.0);
     return;
 }

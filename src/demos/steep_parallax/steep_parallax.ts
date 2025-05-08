@@ -17,14 +17,16 @@ export class SteepParallaxDemo extends DemoBase
     materialUniforms = {
         AlbedoMap: {value:null},
         NormalMap: {value:null},
-        BumpScale: {value:0.05},
+        BumpScale: {value:-0.3},
         InvModelMatrix: {value:null},
         LightPos:{value:new THREE.Vector3(0,10,-5)}
         
     }
 
     initialize(options?: any) {
-        let quad = new THREE.PlaneGeometry(1,1);
+        let quad = new THREE.PlaneGeometry(1,1,32,32);
+        //let quad = new THREE.SphereGeometry(0.5);
+        quad.computeTangents();
         this.scene = new THREE.Scene();
         this.camera = new OrbitalCamera(70,0.001,10.0,this.renderer);
 
@@ -54,6 +56,8 @@ export class SteepParallaxDemo extends DemoBase
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
             this.materialUniforms.NormalMap.value = tex;
         });
+
+        this.gui.add(this.materialUniforms.BumpScale, "value").name("Bump Scale");
     }
 
     override update(options?: any): void {
