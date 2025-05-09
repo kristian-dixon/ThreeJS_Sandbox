@@ -17,7 +17,7 @@ void main()	{
     vec3 eyeDir = normalize(vTSEyeDir);
 
     numSteps = mix(numSteps * 2.0, numSteps, eyeDir.z);
-    vec2 delta = vec2(eyeDir.x, eyeDir.y) * BumpScale / (eyeDir.z * numSteps);
+    vec2 delta = vec2(-eyeDir.x, -eyeDir.y) * BumpScale / (eyeDir.z * numSteps);
 
     while( NB.a < height)
     {
@@ -27,7 +27,8 @@ void main()	{
         NB = texture2D(NormalMap, offset);
     }
 
-    gl_FragColor = texture2D(AlbedoMap, offset);
+    float lit = max(dot(normalize(NB.xyz * 2.0), normalize(vTSLightDir)), 0.0);
+    gl_FragColor = vec4(texture2D(AlbedoMap, offset).rgb * lit, 1.0);
 
     //gl_FragColor = vec4(abs(vTSEyeDir), 1.0);
     return;

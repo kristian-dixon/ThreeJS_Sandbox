@@ -3,8 +3,8 @@ import DemoBase from "../../SceneBase";
 import { OrbitalCamera } from "../../shared/generic_scene_elements/camera";
 import { DefaultLighting } from "../../shared/generic_scene_elements/lighting";
 
-import albedoTex from "./textures/Rock062_1K-PNG_Color.png"
-import normalTex from "./textures/Rock062_1K-GL-PackedDisp.png"
+import albedoTex from "./textures/ganges_river_pebbles_diff_1k.jpg"
+import normalTex from "./textures/ganges_river_pebbles_nor_gl_packed.png"
 
 import vertexShader from "./shaders/steep_parallax.vs"
 import fragmentShader from "./shaders/steep_parallax.fs"
@@ -17,9 +17,9 @@ export class SteepParallaxDemo extends DemoBase
     materialUniforms = {
         AlbedoMap: {value:null},
         NormalMap: {value:null},
-        BumpScale: {value:-0.3},
+        BumpScale: {value:0.15},
         InvModelMatrix: {value:null},
-        LightPos:{value:new THREE.Vector3(0,10,-5)}
+        LightPos:{value:new THREE.Vector3(8,10,5.5)}
         
     }
 
@@ -58,6 +58,10 @@ export class SteepParallaxDemo extends DemoBase
         });
 
         this.gui.add(this.materialUniforms.BumpScale, "value").name("Bump Scale");
+
+        this.gui.add(this.materialUniforms.LightPos.value, "x");
+        this.gui.add(this.materialUniforms.LightPos.value, "y");
+        this.gui.add(this.materialUniforms.LightPos.value, "z");
     }
 
     override update(options?: any): void {

@@ -18,6 +18,7 @@ let availableScenes = {
     lowresfilter:LowResScene,
     refraction:RefractionScene,
     rain:ScreenspaceRainDemo,
+    skyscraper_generator:SkyScraperGeneratorDemo,
     steep_parallax:SteepParallaxDemo
 }
 

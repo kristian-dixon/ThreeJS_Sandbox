@@ -22,6 +22,7 @@ export default abstract class DemoBase
 
     private timeManager: THREE.Clock;
     private dt: number=0;
+    private globalTime=0.0;
 
     private xrState = XRState.NONE;
 
@@ -87,6 +88,7 @@ export default abstract class DemoBase
     update(options?:any)
     {
         this.dt = this.timeManager.getDelta();
+        this.globalTime += this.dt;
 
         //XR State management
         if(this.renderer.xr.isPresenting)
@@ -118,6 +120,10 @@ export default abstract class DemoBase
 
     getDeltaTime():number{
         return this.dt;
+    }
+
+    getGlobalTime():number{
+        return this.globalTime;
     }
 
     private SetXRState(state:XRState)
