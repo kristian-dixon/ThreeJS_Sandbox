@@ -22,8 +22,8 @@ void main()	{
     mat3 tbn = mat3(tangent.xyz, binormal, normal);
     
     vec3 eyeDir = normalize(osEyePos - (modelMatrix * vec4(position, 1.0)).xyz);
-    vTSEyeDir = tbn * eyeDir;
+    vTSEyeDir =  eyeDir * tbn;
 
     vec3 lightDir = normalize(osLightPos - (modelMatrix * vec4(position, 1.0)).xyz);
-    vTSLightDir = tbn * lightDir;
+    vTSLightDir =  lightDir * tbn;
 }

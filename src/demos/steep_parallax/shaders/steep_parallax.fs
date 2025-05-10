@@ -27,9 +27,14 @@ void main()	{
         NB = texture2D(NormalMap, offset);
     }
 
-    float lit = max(dot(normalize(NB.xyz * 2.0), normalize(vTSLightDir)), 0.0);
-    gl_FragColor = vec4(texture2D(AlbedoMap, offset).rgb * lit, 1.0);
+    
 
-    //gl_FragColor = vec4(abs(vTSEyeDir), 1.0);
+    float lit = max(dot(normalize(NB.xyz * 2.0-1.0), normalize(vTSLightDir)), 0.0);
+    //lit = NB.z * vTSLightDir.z;
+    //lit = NB.z;
+    gl_FragColor = vec4(texture2D(AlbedoMap, offset).rgb * lit, 1.0);
+    //gl_FragColor = vec4(texture2D(AlbedoMap, offset).rgb, 1.0);
+
+    //gl_FragColor = vec4((vTSEyeDir), 1.0);
     return;
 }

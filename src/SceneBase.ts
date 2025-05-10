@@ -31,7 +31,8 @@ export default abstract class DemoBase
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById("app") as HTMLCanvasElement,
             antialias: true,
-            alpha: true
+            alpha: true,
+            precision: "highp"
         });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(window.devicePixelRatio);

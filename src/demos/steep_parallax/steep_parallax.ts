@@ -25,7 +25,7 @@ export class SteepParallaxDemo extends DemoBase
 
     initialize(options?: any) {
         let quad = new THREE.PlaneGeometry(1,1,32,32);
-        //let quad = new THREE.SphereGeometry(0.5);
+        //let quad = new THREE.SphereGeometry(0.5,32,32,32);
         quad.computeTangents();
         this.scene = new THREE.Scene();
         this.camera = new OrbitalCamera(70,0.001,10.0,this.renderer);
@@ -44,7 +44,7 @@ export class SteepParallaxDemo extends DemoBase
         this.materialUniforms.InvModelMatrix.value = invMatrix;
 
         DefaultLighting.SetupDefaultLighting(this.scene);
-        this.scene.background = new THREE.Color("Green");
+        this.scene.background = new THREE.Color("Blue");
 
         let textureLoader = new THREE.TextureLoader();
         textureLoader.load(albedoTex, (tex)=>{
@@ -59,13 +59,20 @@ export class SteepParallaxDemo extends DemoBase
 
         this.gui.add(this.materialUniforms.BumpScale, "value").name("Bump Scale");
 
-        this.gui.add(this.materialUniforms.LightPos.value, "x");
-        this.gui.add(this.materialUniforms.LightPos.value, "y");
-        this.gui.add(this.materialUniforms.LightPos.value, "z");
+        let sphereMesh = new THREE.Mesh(new THREE.SphereGeometry(0.015), new THREE.MeshBasicMaterial({color:new THREE.Color("Yellow")}));
+        this.scene.add(sphereMesh);
+        this.materialUniforms.LightPos.value = sphereMesh.position;
     }
 
     override update(options?: any): void {
         super.update(options);
+
+        this.materialUniforms.LightPos.value.setX(Math.sin(this.getGlobalTime()) * 0.4);
+        this.materialUniforms.LightPos.value.setY(Math.cos(this.getGlobalTime()) * 0.4);
+        //this.materialUniforms.LightPos.value.setX((0.0));
+        //this.materialUniforms.LightPos.value.setY((0.0));
+        this.materialUniforms.LightPos.value.setZ((Math.cos(1.0 + this.getGlobalTime() * 0.3)));
+
         this.renderer.render(this.scene, this.camera);
     }
     
