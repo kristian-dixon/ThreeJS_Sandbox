@@ -20,7 +20,11 @@ export class SteepParallaxDemo extends DemoBase
         BumpScale: {value:0.15},
         InvModelMatrix: {value:null},
         LightPos:{value:new THREE.Vector3(8,10,5.5)}
-        
+    }
+
+    materialDefines = {
+        //steep_mapping:false,
+        occlusion_mapping: false
     }
 
     initialize(options?: any) {
@@ -28,13 +32,14 @@ export class SteepParallaxDemo extends DemoBase
         //let quad = new THREE.SphereGeometry(0.5,32,32,32);
         quad.computeTangents();
         this.scene = new THREE.Scene();
-        this.camera = new OrbitalCamera(70,0.001,10.0,this.renderer);
+        this.camera = new OrbitalCamera(70,0.01,10.0,this.renderer);
 
         let mesh = new THREE.Mesh(quad, new THREE.ShaderMaterial(
             {
                 vertexShader:vertexShader,
                 fragmentShader:fragmentShader,
-                uniforms:this.materialUniforms
+                uniforms:this.materialUniforms,
+                defines:this.materialDefines
             }
         ));
         mesh.position.setZ(-1.0);
@@ -43,7 +48,7 @@ export class SteepParallaxDemo extends DemoBase
         let invMatrix = new THREE.Matrix4().copy(mesh.matrixWorld).invert();
         this.materialUniforms.InvModelMatrix.value = invMatrix;
 
-        DefaultLighting.SetupDefaultLighting(this.scene);
+        //DefaultLighting.SetupDefaultLighting(this.scene);
         this.scene.background = new THREE.Color("Blue");
 
         let textureLoader = new THREE.TextureLoader();
@@ -58,9 +63,20 @@ export class SteepParallaxDemo extends DemoBase
         });
 
         this.gui.add(this.materialUniforms.BumpScale, "value").name("Bump Scale");
+        this.gui.add(this.materialDefines, "occlusion_mapping").name("Occlusion Mapping").onFinishChange(()=>{
+            mesh.material.needsUpdate = true;
+        });
 
         let sphereMesh = new THREE.Mesh(new THREE.SphereGeometry(0.015), new THREE.MeshBasicMaterial({color:new THREE.Color("Yellow")}));
         this.scene.add(sphereMesh);
+
+        let cubeForDepthTesting = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshStandardMaterial({color:new THREE.Color("White")}));
+        cubeForDepthTesting.position.setX(0.1);
+        cubeForDepthTesting.position.setZ(-1.05);
+        this.scene.add(cubeForDepthTesting);
+
+        sphereMesh.add(new THREE.PointLight(new THREE.Color("White"), 1.0, 100000.0, 0.0))
+
         this.materialUniforms.LightPos.value = sphereMesh.position;
     }
 
