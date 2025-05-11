@@ -55,15 +55,15 @@ void main()	{
 
 
     //vec4 ndcPos = vpMat * vec4(wsPos,1.0);
+#ifdef depth_correction
     vec4 viewPos = viewMatrix * vec4(wsPos + 
                                     normalize(-wsViewDir) * length(vec3(vUv, 0.0) - vec3(currentTexCoords, currentLayerDepth * BumpScale)),
                                     1.0);
 
     float depth = viewZToPerspectiveDepth(viewPos.z, 0.01, 10.0 );
-
-    
-
     gl_FragDepth = depth;
+#endif
+
 
     return;
 }

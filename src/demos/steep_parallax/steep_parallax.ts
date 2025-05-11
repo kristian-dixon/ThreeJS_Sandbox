@@ -17,14 +17,14 @@ export class SteepParallaxDemo extends DemoBase
     materialUniforms = {
         AlbedoMap: {value:null},
         NormalMap: {value:null},
-        BumpScale: {value:0.15},
-        InvModelMatrix: {value:null},
+        BumpScale: {value:0.1},
         LightPos:{value:new THREE.Vector3(8,10,5.5)}
     }
 
     materialDefines = {
         //steep_mapping:false,
-        occlusion_mapping: true
+        occlusion_mapping: true,
+        depth_correction: true
     }
 
     initialize(options?: any) {
@@ -45,11 +45,22 @@ export class SteepParallaxDemo extends DemoBase
         mesh.position.setZ(-1.0);
         this.scene.add(mesh);
 
-        let invMatrix = new THREE.Matrix4().copy(mesh.matrixWorld).invert();
-        this.materialUniforms.InvModelMatrix.value = invMatrix;
+        for(let x = -2; x<=2; x++)
+        {
+            for(let y = -2; y<=2; y++)
+            {
+                let cpy = mesh.clone();
+                cpy.position.setX(x);
+                cpy.position.setY(y);
+                this.scene.add(cpy);
+            }
+        }
 
         //DefaultLighting.SetupDefaultLighting(this.scene);
-        this.scene.background = new THREE.Color("Blue");
+        if(window.top == window.self)
+        {
+            this.scene.background = new THREE.Color("#050505");
+        }
 
         let textureLoader = new THREE.TextureLoader();
         textureLoader.load(albedoTex, (tex)=>{
@@ -67,6 +78,10 @@ export class SteepParallaxDemo extends DemoBase
             mesh.material.needsUpdate = true;
         });
 
+        this.gui.add(this.materialDefines, "depth_correction").name("Depth Correction").onFinishChange(()=>{
+            mesh.material.needsUpdate = true;
+        });
+
         let sphereMesh = new THREE.Mesh(new THREE.SphereGeometry(0.015), new THREE.MeshBasicMaterial({color:new THREE.Color("Yellow")}));
         this.scene.add(sphereMesh);
 
@@ -78,6 +93,14 @@ export class SteepParallaxDemo extends DemoBase
         sphereMesh.add(new THREE.PointLight(new THREE.Color("White"), 1.0, 100000.0, 0.0))
 
         this.materialUniforms.LightPos.value = sphereMesh.position;
+
+        this.events.addEventListener("DEMO:SetBumpScale", (evt)=>{
+            this.materialUniforms.BumpScale.value = evt.message;
+        })
+
+        this.events.addEventListener("DEMO:SetOcclusion", (evt)=>{
+            this.materialDefines.occlusion_mapping = evt.message;
+        })
     }
 
     override update(options?: any): void {

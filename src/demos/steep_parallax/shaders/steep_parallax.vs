@@ -6,7 +6,6 @@ varying vec3 vTSLightDir;
 varying vec3 wsPos;
 varying vec3 wsViewDir;
 
-uniform mat4 InvModelMatrix;
 uniform vec3 LightPos;
 
 
