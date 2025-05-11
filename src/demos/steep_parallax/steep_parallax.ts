@@ -24,7 +24,7 @@ export class SteepParallaxDemo extends DemoBase
 
     materialDefines = {
         //steep_mapping:false,
-        occlusion_mapping: false
+        occlusion_mapping: true
     }
 
     initialize(options?: any) {
