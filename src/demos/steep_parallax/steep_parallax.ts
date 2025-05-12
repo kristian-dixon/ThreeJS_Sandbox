@@ -101,6 +101,14 @@ export class SteepParallaxDemo extends DemoBase
         this.events.addEventListener("DEMO:SetOcclusion", (evt)=>{
             this.materialDefines.occlusion_mapping = evt.message;
         })
+
+        this.events.addEventListener("DEMO:SetDepthCorrection", (evt)=>{
+            this.materialDefines.depth_correction = evt.message;
+        })
+
+        this.events.addEventListener("Demo:SetSecondaryObjectVisible", (evt)=>{
+            cubeForDepthTesting.visible = evt.message;
+        })
     }
 
     override update(options?: any): void {
