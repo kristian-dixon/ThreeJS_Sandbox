@@ -16,13 +16,21 @@ uniform float BumpScale;
 
 void main()	{ 
     vec3 eyeDir = normalize(vTSEyeDir);
-    
+
+#ifdef standard_parallax
+    vec2 offset = eyeDir.xy * BumpScale / eyeDir.z;
+    offset *= (1.0 - texture2D(NormalMap, vUv).a);
+
+    vec2 currentTexCoords = -offset + vUv;
+    vec4 currentDepthMapValue = texture2D(NormalMap, currentTexCoords);
+    float currentLayerDepth = 1.0 - currentDepthMapValue.a;
+#else
     float numSteps = 30.0;
     numSteps = mix(numSteps * 4.0, numSteps * 1.0, eyeDir.z);
 
     float currentLayerDepth = 0.0;
     float perLayerDepth = 1.0/numSteps;
-    vec2 delta = vec2(eyeDir.x, eyeDir.y) * BumpScale / (eyeDir.z * numSteps);
+    vec2 delta = eyeDir.xy * BumpScale / (eyeDir.z * numSteps);
 
     vec2 currentTexCoords = vUv;
     vec4 currentDepthMapValue = texture2D(NormalMap, currentTexCoords);
@@ -33,18 +41,20 @@ void main()	{
         currentTexCoords -= delta;
         currentDepthMapValue = texture2D(NormalMap, currentTexCoords);
     }
-
-#ifdef occlusion_mapping
+    #ifdef occlusion_mapping
     vec2 prevTexCoords = currentTexCoords + delta;
 
     float afterDepth = (1.0 - currentDepthMapValue.a) - currentLayerDepth;
     float beforeDepth = (1.0 - texture2D(NormalMap, prevTexCoords).a) - currentLayerDepth + perLayerDepth;
     float weight = afterDepth / (afterDepth - beforeDepth);
 
-    currentTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
+    currentTexCoords = mix(currentTexCoords, prevTexCoords, weight);// prevTexCoords * weight + currentTexCoords * (1.0 - weight);
     currentDepthMapValue = texture2D(NormalMap, currentTexCoords);
     //currentLayerDepth = beforeDepth * weight + afterDepth * (1.0 - weight);
+    #endif
 #endif
+
+
 
     float lit = max(dot(normalize(currentDepthMapValue.xyz * 2.0-1.0), normalize(vTSLightDir)), 0.0);
     gl_FragColor = vec4(texture2D(AlbedoMap, currentTexCoords).rgb * lit, 1.0);

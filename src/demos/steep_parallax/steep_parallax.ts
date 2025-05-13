@@ -24,7 +24,8 @@ export class SteepParallaxDemo extends DemoBase
     materialDefines = {
         //steep_mapping:false,
         occlusion_mapping: true,
-        depth_correction: true
+        depth_correction: true,
+        standard_parallax: true
     }
 
     initialize(options?: any) {
@@ -98,8 +99,18 @@ export class SteepParallaxDemo extends DemoBase
             this.materialUniforms.BumpScale.value = evt.message;
         })
 
+
+        this.events.addEventListener("DEMO:SetVanilla", (evt)=>{
+            this.materialDefines.occlusion_mapping = false;
+            this.materialDefines.standard_parallax = true;
+        })
+        this.events.addEventListener("DEMO:SetSteep", (evt)=>{
+            this.materialDefines.occlusion_mapping = false;
+            this.materialDefines.standard_parallax = false;
+        })
         this.events.addEventListener("DEMO:SetOcclusion", (evt)=>{
-            this.materialDefines.occlusion_mapping = evt.message;
+            this.materialDefines.occlusion_mapping = true;
+            this.materialDefines.standard_parallax = false;
         })
 
         this.events.addEventListener("DEMO:SetDepthCorrection", (evt)=>{
