@@ -25,7 +25,7 @@ export class SteepParallaxDemo extends DemoBase
         //steep_mapping:false,
         occlusion_mapping: true,
         depth_correction: true,
-        standard_parallax: true
+        standard_parallax: false
     }
 
     initialize(options?: any) {
@@ -95,29 +95,34 @@ export class SteepParallaxDemo extends DemoBase
 
         this.materialUniforms.LightPos.value = sphereMesh.position;
 
-        this.events.addEventListener("DEMO:SetBumpScale", (evt)=>{
+        this.events.addEventListener("SetBumpScale", (evt)=>{
             this.materialUniforms.BumpScale.value = evt.message;
         })
 
 
-        this.events.addEventListener("DEMO:SetVanilla", (evt)=>{
+        this.events.addEventListener("SetVanilla", (evt)=>{
             this.materialDefines.occlusion_mapping = false;
             this.materialDefines.standard_parallax = true;
+            mesh.material.needsUpdate = true;
         })
-        this.events.addEventListener("DEMO:SetSteep", (evt)=>{
+        this.events.addEventListener("SetSteep", (evt)=>{
             this.materialDefines.occlusion_mapping = false;
             this.materialDefines.standard_parallax = false;
+            mesh.material.needsUpdate = true;
         })
-        this.events.addEventListener("DEMO:SetOcclusion", (evt)=>{
+        this.events.addEventListener("SetOcclusion", (evt)=>{
             this.materialDefines.occlusion_mapping = true;
             this.materialDefines.standard_parallax = false;
+            mesh.material.needsUpdate = true;
+
         })
 
-        this.events.addEventListener("DEMO:SetDepthCorrection", (evt)=>{
+        this.events.addEventListener("SetDepthCorrection", (evt)=>{
             this.materialDefines.depth_correction = evt.message;
+            mesh.material.needsUpdate = true;
         })
 
-        this.events.addEventListener("Demo:SetSecondaryObjectVisible", (evt)=>{
+        this.events.addEventListener("SetSecondaryObjectVisible", (evt)=>{
             cubeForDepthTesting.visible = evt.message;
         })
     }
