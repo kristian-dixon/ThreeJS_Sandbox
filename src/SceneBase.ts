@@ -22,6 +22,7 @@ export default abstract class DemoBase
 
     private timeManager: THREE.Clock;
     private dt: number=0;
+    private globalTime=0.0;
 
     private xrState = XRState.NONE;
 
@@ -30,7 +31,8 @@ export default abstract class DemoBase
         this.renderer = new THREE.WebGLRenderer({
             canvas: document.getElementById("app") as HTMLCanvasElement,
             antialias: true,
-            alpha: true
+            alpha: true,
+            precision: "highp"
         });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -87,6 +89,7 @@ export default abstract class DemoBase
     update(options?:any)
     {
         this.dt = this.timeManager.getDelta();
+        this.globalTime += this.dt;
 
         //XR State management
         if(this.renderer.xr.isPresenting)
@@ -118,6 +121,10 @@ export default abstract class DemoBase
 
     getDeltaTime():number{
         return this.dt;
+    }
+
+    getGlobalTime():number{
+        return this.globalTime;
     }
 
     private SetXRState(state:XRState)

@@ -19,7 +19,6 @@ export default class InteriorMappingScene extends DemoBase{
 
     group: THREE.Group = new THREE.Group();
     scene: THREE.Scene = new THREE.Scene();
-    globalTime = -1.4;
 
 
     initialize(debug: boolean = true, addGridHelper: boolean = true){
@@ -87,8 +86,7 @@ export default class InteriorMappingScene extends DemoBase{
     update(){ 
         super.update();
         this.renderer.render(this.group, this.camera);
-        this.globalTime += this.getDeltaTime() * 0.1;//(this.globalTime +  this.getDeltaTime() * 0.025) % 1.0;
-        this.plane.material["uniforms"].time.value = (Math.sin(this.globalTime) + 1) * 0.5;
+        this.plane.material["uniforms"].time.value = (Math.sin(this.getGlobalTime() - 1.4) + 1) * 0.5;
     }
 
     loadTexture(uri:string): THREE.Texture

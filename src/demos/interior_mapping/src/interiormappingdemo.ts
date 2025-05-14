@@ -37,7 +37,6 @@ export default class InteriorMappingScene extends DemoBase{
     scene: THREE.Scene = new THREE.Scene();
 
     gltf:THREE.Group;
-    globalTime = 0;
 
     initialize(){
         this.camera = new OrbitalCamera(60, .1, 100, this.renderer);
@@ -227,16 +226,16 @@ export default class InteriorMappingScene extends DemoBase{
        
         this.renderer.render(this.group, this.camera);
         
-        this.globalTime = (this.globalTime +  this.getDeltaTime() * 0.1) % 1.0;
+        let globalTime = (this.getGlobalTime() * 0.1) % 1.0;
 
         this.group.traverse((x)=>{
             if(x instanceof THREE.Light){
                 x.intensity = 0.25;//1.0 - Math.abs((this.globalTime - 0.5) * 2.0);
             }
         })
-        this.material.uniforms.time.value = this.globalTime;
-        this.holeMaterial.uniforms.time.value = this.globalTime;
-        this.plane.material["uniforms"].time.value = this.globalTime;   
+        this.material.uniforms.time.value = globalTime;
+        this.holeMaterial.uniforms.time.value = globalTime;
+        this.plane.material["uniforms"].time.value = globalTime;   
     }
 
 
