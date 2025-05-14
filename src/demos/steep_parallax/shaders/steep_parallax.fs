@@ -1,5 +1,6 @@
-#include <packing>
+precision highp float;
 
+#include <packing>
 varying vec2 vUv;
 varying vec3 vTSEyeDir;
 varying vec3 vTSLightDir;
