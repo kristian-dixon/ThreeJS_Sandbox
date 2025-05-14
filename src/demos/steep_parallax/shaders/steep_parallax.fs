@@ -53,6 +53,7 @@ void main()	{
     currentDepthMapValue = texture2D(NormalMap, currentTexCoords);
     //currentLayerDepth = beforeDepth * weight + afterDepth * (1.0 - weight);
     #endif
+    currentLayerDepth = 1.0 - currentDepthMapValue.a;
 #endif
 
 
