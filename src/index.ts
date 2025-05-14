@@ -9,6 +9,7 @@ import ScreenspaceRainDemo from "./demos/rain/screenspace_rain_demo";
 import DemoBase from "./SceneBase";
 import SkyScraperGeneratorDemo from "./demos/skyscraper_generator/src/skyscrapergenerator";
 import { SteepParallaxDemo } from "./demos/steep_parallax/steep_parallax";
+import { SimplePortal } from "./demos/simple_portal/simple_portal";
 
 let availableScenes = {
     uv_displacement:UVDisplacementScene,
@@ -19,7 +20,8 @@ let availableScenes = {
     refraction:RefractionScene,
     rain:ScreenspaceRainDemo,
     skyscraper_generator:SkyScraperGeneratorDemo,
-    steep_parallax:SteepParallaxDemo
+    steep_parallax:SteepParallaxDemo,
+    simple_portal: SimplePortal
 }
 
 let scene: DemoBase = null;
@@ -28,7 +30,7 @@ const urlParams = new URLSearchParams(window.location.search);
 let demo = urlParams.get("demo");
 if(!demo)
 {
-    demo = "steep_parallax";
+    demo = "simple_portal";
 }
 
 scene = new availableScenes[demo]();
