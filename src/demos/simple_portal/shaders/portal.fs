@@ -74,7 +74,7 @@ void main()	{
 
 
     vec4 viewPos = viewMatrix * vec4(wsPos + 
-                                    normalize(-wsViewDir) * length(vec3(vUv, 0.0) - vec3(currentTexCoords, currentLayerDepth * BumpScale)),
+                                    normalize(-wsViewDir) * length(vec3(vUv + dispUv * 0.1, 0.0) - vec3(currentTexCoords, currentLayerDepth * BumpScale)),
                                     1.0);
 
     float depth = viewZToPerspectiveDepth(viewPos.z, 0.01, 10.0 );
