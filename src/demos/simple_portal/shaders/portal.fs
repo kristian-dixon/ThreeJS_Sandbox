@@ -17,6 +17,7 @@ uniform sampler2D displacementTex;
 uniform float displacementStrength;
 uniform vec2 displacementUVScale;
 uniform vec2 scrollDirection;
+uniform float BumpScale;
 uniform float time;
 
 uniform vec3 backgroundColourTint;
@@ -25,7 +26,6 @@ uniform vec3 foamColourTint;
 
 void main()	{ 
     vec3 eyeDir = normalize(vTSEyeDir);
-    const float BumpScale = 0.2;
 
     vec2 scrolledUv = (vUv * displacementUVScale) + scrollDirection * time;
     vec2 dispUv = (2.0 * texture2D(displacementTex, scrolledUv).xy) - 1.0;
@@ -57,7 +57,7 @@ void main()	{
 
     currentTexCoords = mix(currentTexCoords, prevTexCoords, weight);// prevTexCoords * weight + currentTexCoords * (1.0 - weight);
     currentDepthMapValue = texture2D(mainTex, currentTexCoords);
-    //currentLayerDepth = (1.0 - currentDepthMapValue.r) * BumpScale;
+    //currentLayerDepth = (1.0 - currentDepthMapValue.r);
 
     // if(currentTexCoords.x < 0.0 || currentTexCoords.x > 1.0 || currentTexCoords.y < 0.0 || currentTexCoords.y > 1.0)
     //     discard;

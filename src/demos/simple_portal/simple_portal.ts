@@ -7,7 +7,8 @@ import { OrbitalCamera } from "../../shared/generic_scene_elements/camera";
 import vertexShader from "./shaders/portal.vs";
 import fragmentShader from "./shaders/portal.fs";
 
-import mainTex from "../../shared/assets/textures/noise/HorribleClouds.png"
+import fogTex from "../../shared/assets/textures/noise/HorribleClouds.png"
+import grassTex from "../../shared/assets/textures/noise/SimplexNoise.png"
 import dispTex from "../../shared/assets/textures/flow_map/flowmap.png"
 import foamTex from "../../shared/assets/textures/placeholder/randomShapes.png"
 
@@ -20,7 +21,7 @@ export class SimplePortal extends DemoBase
     scene: THREE.Scene;
     camera: OrbitalCamera;
 
-    materialUniforms = 
+    fogDoorUniforms = 
     {
         mainTex: {value: null},
         foamTex: {value: null},
@@ -29,6 +30,20 @@ export class SimplePortal extends DemoBase
         displacementUVScale: {value: new THREE.Vector2(1.85,1.85)},
         scrollDirection: {value: new THREE.Vector2(0,0.15)},
         backgroundColourTint: {value: new THREE.Color(1.0,1.0,1.0)},
+        BumpScale:{value: 0.21},
+        time:{value:0.0}
+    }
+
+    grassUniforms = 
+    {
+        mainTex: {value: null},
+        foamTex: {value: null},
+        displacementTex: {value:null},
+        displacementStrength: {value: 0.154},
+        displacementUVScale: {value: new THREE.Vector2(1.85,1.85)},
+        scrollDirection: {value: new THREE.Vector2(0,0.15)},
+        backgroundColourTint: {value: new THREE.Color(1.0,1.0,1.0)},
+        BumpScale:{value: 0.1},
         time:{value:0.0}
     }
 
@@ -42,11 +57,21 @@ export class SimplePortal extends DemoBase
 
         DefaultLighting.SetupDefaultLighting(this.scene);
 
-        let material = new THREE.ShaderMaterial(
+        let fogMaterial = new THREE.ShaderMaterial(
             {
                 vertexShader:vertexShader,
                 fragmentShader:fragmentShader,
-                uniforms:this.materialUniforms
+                uniforms:this.fogDoorUniforms,
+                //side:THREE.DoubleSide
+            }
+        );
+
+        let grassMaterial = new THREE.ShaderMaterial(
+            {
+                vertexShader:vertexShader,
+                fragmentShader:fragmentShader,
+                uniforms:this.grassUniforms,
+                //side:THREE.BackSide
             }
         );
        
@@ -57,8 +82,19 @@ export class SimplePortal extends DemoBase
                 {
                     if(x.name == "FogDoor")
                     {
-                        x.material = material;
+                        x.material = fogMaterial;
                     }
+
+                    if(x.name == "Cube001")
+                    {
+                        //x.visible = false;
+                    }
+
+                    if(x.name == "Plane")
+                    {
+                        x.material = grassMaterial;
+                    }
+                    console.log(x.name);
                 }
             })
 
@@ -68,19 +104,25 @@ export class SimplePortal extends DemoBase
         
 
         let textureLoader = new THREE.TextureLoader();
-        textureLoader.load(mainTex, (tex)=>{
+        textureLoader.load(fogTex, (tex)=>{
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            this.materialUniforms.mainTex.value = tex;
+            this.fogDoorUniforms.mainTex.value = tex;
+        })
+        textureLoader.load(grassTex, (tex)=>{
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            this.grassUniforms.mainTex.value = tex;
         })
 
         textureLoader.load(foamTex, (tex)=>{
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            this.materialUniforms.foamTex.value = tex;
+            this.fogDoorUniforms.foamTex.value = tex;
+            this.grassUniforms.foamTex.value = tex;
         })
 
         textureLoader.load(dispTex, (tex)=>{
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            this.materialUniforms.displacementTex.value = tex;
+            this.fogDoorUniforms.displacementTex.value = tex;
+            this.grassUniforms.displacementTex.value = tex;
         })
 
         textureLoader.load(
@@ -97,51 +139,95 @@ export class SimplePortal extends DemoBase
             });
         
 
-        Object.keys(this.materialUniforms).forEach((key)=>{
+        let matUniforms = this.fogDoorUniforms;
+        Object.keys(this.fogDoorUniforms).forEach((key)=>{
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
-            if(this.materialUniforms[key].value instanceof THREE.Texture)
+            if(matUniforms[key].value instanceof THREE.Texture)
             {
                 return;
             }
 
-            if(this.materialUniforms[key].value instanceof THREE.Vector2)
+            if(matUniforms[key].value instanceof THREE.Vector2)
             {
-                this.gui.add(this.materialUniforms[key].value, "x").name(key + " x").onChange((x)=>{
+                this.gui.add(matUniforms[key].value, "x").name(key + " x").onChange((x)=>{
                
                 });
 
-                this.gui.add(this.materialUniforms[key].value, "y").name(key + " y").onChange((x)=>{
+                this.gui.add(matUniforms[key].value, "y").name(key + " y").onChange((x)=>{
                
                 });
                 return;
             }
 
-            if(this.materialUniforms[key].value instanceof THREE.Color)
+            if(matUniforms[key].value instanceof THREE.Color)
             {
-                this.gui.add(this.materialUniforms[key].value, "r").name(key + " r").min(0).max(1)
-                this.gui.add(this.materialUniforms[key].value, "g").name(key + " g").min(0).max(1)
-                this.gui.add(this.materialUniforms[key].value, "b").name(key + " g").min(0).max(1);
+                this.gui.add(matUniforms[key].value, "r").name(key + " r").min(0).max(1)
+                this.gui.add(matUniforms[key].value, "g").name(key + " g").min(0).max(1)
+                this.gui.add(matUniforms[key].value, "b").name(key + " g").min(0).max(1);
                 return;
             }
 
-            if(this.materialUniforms[key].value == null)
+            if(matUniforms[key].value == null)
             {
                 return;
             }
 
-            this.gui.add(this.materialUniforms[key], "value").name(key).onChange((x)=>{
+            this.gui.add(matUniforms[key], "value").name(key).onChange((x)=>{
                
             });
 
             // self.events.addEventListener("set:" + key, (evt)=>{
             //     self.settings[key] = evt.message;
         })
+
+        // matUniforms = this.grassUniforms;
+        // Object.keys(this.grassUniforms).forEach((key)=>{
+        //     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //     // @ts-ignore
+        //     if(matUniforms[key].value instanceof THREE.Texture)
+        //     {
+        //         return;
+        //     }
+
+        //     if(matUniforms[key].value instanceof THREE.Vector2)
+        //     {
+        //         this.gui.add(matUniforms[key].value, "x").name(key + " x").onChange((x)=>{
+               
+        //         });
+
+        //         this.gui.add(matUniforms[key].value, "y").name(key + " y").onChange((x)=>{
+               
+        //         });
+        //         return;
+        //     }
+
+        //     if(matUniforms[key].value instanceof THREE.Color)
+        //     {
+        //         this.gui.add(matUniforms[key].value, "r").name(key + " r").min(0).max(1)
+        //         this.gui.add(matUniforms[key].value, "g").name(key + " g").min(0).max(1)
+        //         this.gui.add(matUniforms[key].value, "b").name(key + " g").min(0).max(1);
+        //         return;
+        //     }
+
+        //     if(matUniforms[key].value == null)
+        //     {
+        //         return;
+        //     }
+
+        //     this.gui.add(matUniforms[key], "value").name(key).onChange((x)=>{
+               
+        //     });
+
+        //     // self.events.addEventListener("set:" + key, (evt)=>{
+        //     //     self.settings[key] = evt.message;
+        // })
     }
 
     update(options?: any): void {
         super.update(options);
-        this.materialUniforms.time.value = this.getGlobalTime();
+        this.fogDoorUniforms.time.value = this.getGlobalTime();
+        this.grassUniforms.time.value = this.getGlobalTime();
         this.renderer.render(this.scene, this.camera);
     }
     
