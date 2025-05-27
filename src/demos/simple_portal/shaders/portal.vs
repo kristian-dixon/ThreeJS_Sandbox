@@ -5,15 +5,16 @@ varying vec3 vTSEyeDir;
 
 varying vec3 wsPos;
 varying vec3 wsViewDir;
-
+varying vec3 vColor;
 
 
 //cameraPosition
 
 attribute vec4 tangent;
+attribute vec3 color;
 
 void main()	{
-
+    vColor = color;
     vUv = uv;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     wsPos = (modelMatrix * vec4(position,1.0)).xyz;
