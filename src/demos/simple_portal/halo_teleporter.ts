@@ -41,7 +41,7 @@ export class HaloTeleporter extends DemoBase
         quad.computeTangents();
         this.scene = new THREE.Scene();
         this.camera = new OrbitalCamera(70,0.01,10.0,this.renderer);
-        this.camera.controls.target = new THREE.Vector3(0,0,-2);
+        this.camera.setTarget(new THREE.Vector3(0,0,-2));
 
         DefaultLighting.SetupDefaultLighting(this.scene);
 
