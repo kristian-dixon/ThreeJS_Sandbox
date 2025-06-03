@@ -37,12 +37,6 @@ void main()	{
 
 
     vec4 noise = texture2D(noiseTex, vUv) * 0.75;
-    
-
-
-
-    
-
     vec3 outputCol = backgroundColourTint * max(1.0, rippleCol*2.0) + noise.r;
 
 
