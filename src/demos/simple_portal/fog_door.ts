@@ -16,7 +16,7 @@ import model from "./models/FogDoor.glb"
 import { DefaultLighting } from "../../shared/generic_scene_elements/lighting";
 import skybox from "../../shared/assets/textures/skyboxes/tears_of_steel_bridge_2k.jpg";
 
-export class SimplePortal extends DemoBase
+export class FogDoor extends DemoBase
 {
     scene: THREE.Scene;
     camera: OrbitalCamera;
