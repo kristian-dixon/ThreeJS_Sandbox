@@ -27,10 +27,13 @@ uniform vec3 foamColourTint;
 void main()	{ 
     vec3 eyeDir = normalize(vTSEyeDir);
 
+    #ifdef SIMPLE_SCROLL
+    vec2 dispUv = scrollDirection * time * 4.0;
+    #else
     vec2 scrolledUv = (vUv * displacementUVScale) + scrollDirection * time;
     vec2 dispUv = (2.0 * texture2D(displacementTex, scrolledUv).xy) - 1.0;
     dispUv *= displacementStrength;
-
+    #endif
 
 
     float numSteps = 30.0;

@@ -34,17 +34,9 @@ export class FogDoor extends DemoBase
         time:{value:0.0}
     }
 
-    grassUniforms = 
+    fogDefs = 
     {
-        mainTex: {value: null},
-        foamTex: {value: null},
-        displacementTex: {value:null},
-        displacementStrength: {value: 0.154},
-        displacementUVScale: {value: new THREE.Vector2(1.85,1.85)},
-        scrollDirection: {value: new THREE.Vector2(0,0.15)},
-        backgroundColourTint: {value: new THREE.Color(1.0,1.0,1.0)},
-        BumpScale:{value: 0.1},
-        time:{value:0.0}
+        SIMPLE_SCROLL: false
     }
 
     initialize(options?: any) 
@@ -63,18 +55,11 @@ export class FogDoor extends DemoBase
                 vertexShader:vertexShader,
                 fragmentShader:fragmentShader,
                 uniforms:this.fogDoorUniforms,
+                defines:this.fogDefs
                 //side:THREE.DoubleSide
             }
         );
 
-        let grassMaterial = new THREE.ShaderMaterial(
-            {
-                vertexShader:vertexShader,
-                fragmentShader:fragmentShader,
-                uniforms:this.grassUniforms,
-                //side:THREE.BackSide
-            }
-        );
        
         let gltfLoader = new GLTFLoader();
         gltfLoader.load(model, (gltf)=>{
@@ -91,11 +76,7 @@ export class FogDoor extends DemoBase
                         //x.visible = false;
                     }
 
-                    if(x.name == "Plane")
-                    {
-                        x.material = grassMaterial;
-                    }
-                    console.log(x.name);
+           
                 }
             })
 
@@ -111,19 +92,16 @@ export class FogDoor extends DemoBase
         })
         textureLoader.load(grassTex, (tex)=>{
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            this.grassUniforms.mainTex.value = tex;
         })
 
         textureLoader.load(foamTex, (tex)=>{
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
             this.fogDoorUniforms.foamTex.value = tex;
-            this.grassUniforms.foamTex.value = tex;
         })
 
         textureLoader.load(dispTex, (tex)=>{
             tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
             this.fogDoorUniforms.displacementTex.value = tex;
-            this.grassUniforms.displacementTex.value = tex;
         })
 
         textureLoader.load(
@@ -182,53 +160,15 @@ export class FogDoor extends DemoBase
             //     self.settings[key] = evt.message;
         })
 
-        // matUniforms = this.grassUniforms;
-        // Object.keys(this.grassUniforms).forEach((key)=>{
-        //     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //     // @ts-ignore
-        //     if(matUniforms[key].value instanceof THREE.Texture)
-        //     {
-        //         return;
-        //     }
-
-        //     if(matUniforms[key].value instanceof THREE.Vector2)
-        //     {
-        //         this.gui.add(matUniforms[key].value, "x").name(key + " x").onChange((x)=>{
-               
-        //         });
-
-        //         this.gui.add(matUniforms[key].value, "y").name(key + " y").onChange((x)=>{
-               
-        //         });
-        //         return;
-        //     }
-
-        //     if(matUniforms[key].value instanceof THREE.Color)
-        //     {
-        //         this.gui.add(matUniforms[key].value, "r").name(key + " r").min(0).max(1)
-        //         this.gui.add(matUniforms[key].value, "g").name(key + " g").min(0).max(1)
-        //         this.gui.add(matUniforms[key].value, "b").name(key + " g").min(0).max(1);
-        //         return;
-        //     }
-
-        //     if(matUniforms[key].value == null)
-        //     {
-        //         return;
-        //     }
-
-        //     this.gui.add(matUniforms[key], "value").name(key).onChange((x)=>{
-               
-        //     });
-
-        //     // self.events.addEventListener("set:" + key, (evt)=>{
-        //     //     self.settings[key] = evt.message;
-        // })
+        this.events.addEventListener("Toggle", ()=>{
+            this.fogDefs.SIMPLE_SCROLL = !this.fogDefs.SIMPLE_SCROLL;
+            fogMaterial.needsUpdate = true;
+        })
     }
 
     update(options?: any): void {
         super.update(options);
         this.fogDoorUniforms.time.value = this.getGlobalTime();
-        this.grassUniforms.time.value = this.getGlobalTime();
         this.renderer.render(this.scene, this.camera);
     }
     
