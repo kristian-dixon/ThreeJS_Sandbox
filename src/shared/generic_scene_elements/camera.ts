@@ -23,4 +23,8 @@ export class OrbitalCamera extends THREE.PerspectiveCamera
     {
         this.controls.target = target;
     }
+
+    disableControls(){
+        //this.controls.enableRotate = false;
+    }
 }

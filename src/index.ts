@@ -10,6 +10,7 @@ import DemoBase from "./SceneBase";
 import SkyScraperGeneratorDemo from "./demos/skyscraper_generator/src/skyscrapergenerator";
 import { SteepParallaxDemo } from "./demos/steep_parallax/steep_parallax";
 import { TreeDemo } from "./demos/tree/tree";
+import { SnowParallaxDemo } from "./demos/snow_parallax/snow_parallax";
 
 let availableScenes = {
     uv_displacement:UVDisplacementScene,
@@ -21,7 +22,8 @@ let availableScenes = {
     rain:ScreenspaceRainDemo,
     skyscraper_generator:SkyScraperGeneratorDemo,
     steep_parallax:SteepParallaxDemo,
-    tree:TreeDemo
+    tree:TreeDemo,
+    snow_parallax:SnowParallaxDemo
 }
 
 let scene: DemoBase = null;
@@ -30,7 +32,7 @@ const urlParams = new URLSearchParams(window.location.search);
 let demo = urlParams.get("demo");
 if(!demo)
 {
-    demo = "tree";
+    demo = "snow_parallax";
 }
 
 scene = new availableScenes[demo]();
