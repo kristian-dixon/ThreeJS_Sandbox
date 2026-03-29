@@ -9,6 +9,7 @@
     "@types/three": "^0.140.0",
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^5.5.3",
+    "lil-gui": "^0.21.0",
     "raw-loader": "^4.0.2",
     "ts-loader": "^9.3.0",
     "ts-node": "^10.7.0",

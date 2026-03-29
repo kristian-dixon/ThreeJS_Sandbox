@@ -1,4 +1,4 @@
-import { GUI } from 'dat.gui';
+import { GUI } from 'lil-gui';
 import * as THREE from 'three';
 import {ARButton} from 'three/examples/jsm/webxr/ARButton.js';
 import {VRButton} from 'three/examples/jsm/webxr/VRButton.js';

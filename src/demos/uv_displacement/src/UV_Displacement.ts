@@ -6,7 +6,7 @@ import {OutputPass} from 'three/examples/jsm/postprocessing/OutputPass'
 
 
 
-import {GUI} from 'dat.gui';
+import {GUI} from 'lil-gui';
 
 
 import FireVertexShader from "../shaders/fire.vs"

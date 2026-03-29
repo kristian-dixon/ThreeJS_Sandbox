@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GUI } from 'dat.gui';
+import { GUI } from 'lil-gui';
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 
 import FoldoutShaderVert from "../shaders/planet_foldout/vertex.vs"
@@ -77,13 +77,7 @@ export default class WhiteboardDemoScene extends DemoBase {
             return;
         }
 
-        this.gui = new GUI(
-            {
-                closed:true,
-                closeOnTop:true
-            }
-
-        );    
+         
         this.gui.close();
         
         let brushSettings = this.gui.addFolder("Brush Settings");

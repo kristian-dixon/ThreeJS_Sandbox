@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {GUI} from 'dat.gui';
+import {GUI} from 'lil-gui';
 import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 import DemoBase from '../../../SceneBase';
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
