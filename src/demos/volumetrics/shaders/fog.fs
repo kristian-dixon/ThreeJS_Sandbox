@@ -46,18 +46,23 @@ void main()	{
     vec3 lightColour = vec3(0,0,0);
     float transmission = 1.0;
     //Inscattering
-    for(float i = viewIntersectionFar; i >= viewIntersectionNear; i-=stepDistance)
+    for(float i = viewIntersectionNear; i < viewIntersectionFar - stepDistance * 0.5; i+=stepDistance)
     {
-        vec3 samplePoint = ro + rd * i;
+        if(transmission < 0.001){
+            break;
+        }
+
+        vec3 samplePoint = ro + rd * (i + stepDistance * 0.5);
 
         float t0 = 0.0; float t1 = 0.0;
-        sphereIntersection(samplePoint, lightDirNorm, sphereParams, t0,t1);
 
         transmission *= perStepTransparency;
+
+        sphereIntersection(samplePoint, lightDirNorm, sphereParams, t0,t1);
+
         
         float lightAttenuation = exp(-t1 * absorbtionCoefficent);
-        lightColour += light.color * lightAttenuation * stepDistance;
-        lightColour *= perStepTransparency;
+        lightColour += transmission * light.color * lightAttenuation * stepDistance;
     }
 
     

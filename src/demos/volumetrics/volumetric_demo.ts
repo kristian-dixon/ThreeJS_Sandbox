@@ -23,7 +23,7 @@ export default class VolumetricDemo extends DemoBase
         inverseView:{value:new Matrix4()},
         sphereParams:{value:new Vector4(0,0,-5,1)},
         absorbtionCoefficent:{value:0.6},
-        stepDistance:{value:0.0075},
+        stepDistance:{value:0.075},
         light:{value:
             {
                 dir:new Vector3(0.7,1,-0.3),
@@ -53,7 +53,8 @@ export default class VolumetricDemo extends DemoBase
             fragmentShader: FragmentShader,
             uniforms:this.uniforms,
             transparent:true,
-            blending:NormalBlending
+            blending:NormalBlending,
+            precision:"highp"
         });
         this.quad = new FullScreenQuad(material);
 
