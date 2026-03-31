@@ -67,7 +67,7 @@ void main()	{
 
     
 
-    //transmission = exp(-distTravelledThroughVolume * absorbtionCoefficent);
+    transmission = exp(-distTravelledThroughVolume * absorbtionCoefficent);
     vec3 backgroundColor = mix(vec3(0.6,0.7,1.0), vec3(0.3,0.45,0.9), 1.0-pow(1.0-abs(dot(vRayDir,vec3(0,1.0,0.0))),4.0));
 
     vec3 col = backgroundColor * transmission + lightColour;
