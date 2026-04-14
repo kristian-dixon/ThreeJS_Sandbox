@@ -44,7 +44,7 @@ scene.initialize();
 window.addEventListener('message', function (event) {
     let origin = event.origin;
 
-    if (origin !== "https://kristian-dixon.github.io" && origin != "http://localhost:4000") {
+    if (origin !== "https://kristiandixon.com" && origin !== "https://kristian-dixon.github.io" && origin != "http://localhost:4000") {
         console.error('Command from unknown origin rejected');
         return;
     }
