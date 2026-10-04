@@ -12,6 +12,8 @@ import { SteepParallaxDemo } from "./demos/steep_parallax/steep_parallax";
 import { TreeDemo } from "./demos/tree/tree";
 import { SnowParallaxDemo } from "./demos/snow_parallax/snow_parallax";
 import VolumetricDemo from "./demos/volumetrics/volumetric_demo";
+import { FogDoor } from "./demos/simple_portal/fog_door";
+import { HaloTeleporter } from "./demos/simple_portal/halo_teleporter";
 
 let availableScenes = {
     uv_displacement:UVDisplacementScene,
@@ -25,7 +27,9 @@ let availableScenes = {
     steep_parallax:SteepParallaxDemo,
     tree:TreeDemo,
     snow_parallax:SnowParallaxDemo,
-    volumetrics:VolumetricDemo
+    volumetrics:VolumetricDemo,
+    fog_door: FogDoor,
+    halo:HaloTeleporter
 }
 
 let scene: DemoBase = null;
