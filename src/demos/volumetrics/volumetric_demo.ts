@@ -35,8 +35,8 @@ export default class VolumetricDemo extends DemoBase
 
     initialize(options?: any) {
         let self = this;
-        this.camera = new OrbitalCamera(40, 0.01, 100, this.renderer);
-        this.camera.setTarget(new Vector3(0,0,-4.75));
+        this.camera = new OrbitalCamera(40, 0.001, 100, this.renderer);
+        this.camera.setTarget(new Vector3(0,0,-5));
         //this.camera.controls.center = new Vector3(0,0,-5);
         this.scene = new Scene();
         
