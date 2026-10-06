@@ -1,43 +1,71 @@
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const path = require('path');
 
-module.exports = {
+module.exports = (env,argv) => {
+  const isProduction = argv.mode === 'production'
+  return{
+    mode: isProduction ? 'production' : 'development',
     entry: './src/index.ts',
-    devtool: 'inline-source-map',
+    
+    devtool : isProduction ? false : 'eval-source-map',
+
     module: {
-      rules: [
+       rules: [
         {
           test: /\.tsx?$/,
           use: 'ts-loader',
           exclude: /node_modules/,
         },
+        // 3. Webpack 5 replacement for raw-loader
         {
           test: /\.(wgsl|glsl|fs|vs)$/i,
-          loader: 'raw-loader',
-          options: {
-            esModule: false,
-          },
+          type: 'asset/source',
         },
+        // 4. Webpack 5 replacement for file-loader
         {
           test: /\.(png|hdr|svg|jpg|jpeg|gif|ogg|mp3|wav|glb)$/i,
-          use:[
-            {
-              loader:'file-loader',
-            },
-          ]
+          type: 'asset/resource',
+          generator: {
+            filename: 'assets/[hash][ext][query]'
+          }
         }
       ],
     },
+
     resolve: {
       extensions: ['.tsx', '.ts', '.js'],
     },
+
     output: {
-      filename: 'bundle.[contenthash].js',
-      //path: path.resolve('D:/_Projects/Github.io/kristian-dixon.github.io/Extra/ThreeJS'),
+      filename: isProduction ? '[name].[contenthash].js' : '[name].js',
       path: path.resolve('C:/_Projects/Personal/Web/Website/Extra/ThreeJS'),
-      clean:true
+      clean: true,
     },
-    plugins: [new HtmlWebpackPlugin({
+
+
+    optimization: {
+      splitChunks: {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+          },
+        },
+      },
+    },
+
+ plugins: [
+      new HtmlWebpackPlugin({
         template: "./index.html",
-    })],
+        // Minify HTML output in production
+        minify: isProduction ? {
+          collapseWhitespace: true,
+          removeComments: true,
+          removeRedundantAttributes: true,
+        } : false,
+      })
+    ],
   };
+};
