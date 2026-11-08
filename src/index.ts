@@ -1,4 +1,4 @@
-
+import DemoBase from "./SceneBase";
 import InteriorMappingScene from "./demos/interior_mapping/src/interiormappingdemo";
 import InteriorMappingARScene from "./demos/interior_mapping/src/interiormapping_ar";
 import LowResScene from "./demos/low_res_filter/src/lowresfilter";
@@ -6,7 +6,6 @@ import RefractionScene from "./demos/refraction/src/refraction";
 import UVDisplacementScene from "./demos/uv_displacement/src/UV_Displacement";
 import WhiteboardDemoScene from "./demos/whiteboard/src/whiteboarddemo";
 import ScreenspaceRainDemo from "./demos/rain/screenspace_rain_demo";
-import DemoBase from "./SceneBase";
 import SkyScraperGeneratorDemo from "./demos/skyscraper_generator/src/skyscrapergenerator";
 import { SteepParallaxDemo } from "./demos/steep_parallax/steep_parallax";
 import { TreeDemo } from "./demos/tree/tree";
