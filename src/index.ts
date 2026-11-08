@@ -59,6 +59,7 @@ window.addEventListener('message', function (event) {
     }
 }, false);
 
+scene.InjectSceneList(Object.keys(availableScenes))
 scene.renderer.setAnimationLoop(loop);
 // loops updates
 function loop() {

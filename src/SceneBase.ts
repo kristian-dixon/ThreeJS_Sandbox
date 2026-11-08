@@ -24,6 +24,8 @@ export default abstract class DemoBase
     private dt: number=0;
     private globalTime=0.0;
 
+    sceneName: string= "";
+
     private xrState = XRState.NONE;
 
     constructor(){
@@ -136,5 +138,13 @@ export default abstract class DemoBase
         this.xrState = state;
 
         this.events.dispatchEvent({type:"XR_StateChanged", message:{previousState:previousState, targetState:state}})
+    }
+
+    public InjectSceneList(posts:string[]){
+        let postList = this.gui.add(this, 'sceneName', posts);
+        postList.name("Select Scene");
+        postList.onFinishChange(function(v){
+            window.location.href = window.location.pathname + "?demo="+v;
+        })
     }
 }
