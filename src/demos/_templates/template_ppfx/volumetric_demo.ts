@@ -1,8 +1,8 @@
 import { EquirectangularReflectionMapping, Mesh, PlaneGeometry, RepeatWrapping, Scene, ShaderMaterial, TextureLoader, Vector3, Wrapping } from "three";
 import {RGBELoader} from "three/examples/jsm/loaders/RGBELoader"
 
-import DemoBase from "../../SceneBase";
-import { OrbitalCamera } from "../../shared/generic_scene_elements/camera";
+import DemoBase from "../../../SceneBase";
+import { OrbitalCamera } from "../../../shared/generic_scene_elements/camera";
 
 import EnvironmentMap from "../../shared/assets/textures/skyboxes/hanger_exterior_cloudy_1k.hdr";
 import { FullScreenQuad } from "three/examples/jsm/postprocessing/Pass";
