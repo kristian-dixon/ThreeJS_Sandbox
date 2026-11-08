@@ -144,7 +144,7 @@ export default abstract class DemoBase
         let postList = this.gui.add(this, 'sceneName', posts);
         postList.name("Select Scene");
         postList.onFinishChange(function(v){
-            window.location.href = window.location.pathname + "?demo="+v;
+            window.location.href = window.location.pathname + "?demo=" + v;
         })
     }
 }

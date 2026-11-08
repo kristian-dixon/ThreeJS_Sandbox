@@ -14,6 +14,7 @@ import VolumetricDemo from "./demos/volumetrics/volumetric_demo";
 import { FogDoor } from "./demos/simple_portal/fog_door";
 import { HaloTeleporter } from "./demos/simple_portal/halo_teleporter";
 import { TemplateModelDemo } from "./demos/_templates/template_model_shader/template_model_demo";
+import { ShallowWater } from "./demos/shallow_water/shallow_water_demo";
 
 let availableScenes = {
     uv_displacement:UVDisplacementScene,
@@ -30,7 +31,7 @@ let availableScenes = {
     volumetrics:VolumetricDemo,
     fog_door: FogDoor,
     halo:HaloTeleporter,
-    exampleModelDemo: TemplateModelDemo
+    shallow_water: ShallowWater
 }
 
 let scene: DemoBase = null;
@@ -39,7 +40,7 @@ const urlParams = new URLSearchParams(window.location.search);
 let demo = urlParams.get("demo");
 if(!demo)
 {
-    demo = "exampleModelDemo";
+    demo = "shallow_water";
 }
 
 scene = new availableScenes[demo]();

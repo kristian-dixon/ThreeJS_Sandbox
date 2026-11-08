@@ -9,6 +9,7 @@ export class Blitter{
     constructor(){
         this.defaultMaterial = new THREE.ShaderMaterial({
             depthTest: false,
+            depthWrite:false,
             vertexShader: vs,
             fragmentShader: fs,
             uniforms:{
