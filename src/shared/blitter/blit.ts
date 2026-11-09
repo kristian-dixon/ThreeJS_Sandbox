@@ -18,6 +18,7 @@ export class Blitter{
         })
 
         this.quad = new THREE.Mesh(new THREE.PlaneGeometry(), this.defaultMaterial);
+        this.quad.frustumCulled = false;
     }
 
     blit(src:THREE.Texture, dst: THREE.WebGLRenderTarget, renderer: THREE.WebGLRenderer, camera:THREE.Camera, material?: THREE.Material){
