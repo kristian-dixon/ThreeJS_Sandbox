@@ -27,7 +27,7 @@ export class ShallowWater extends DemoBase
     materialUniforms = {
         MainTex:{value:null},
         FlowMap:{value:null},
-        FlowUVScale:{value:10.0}, 
+        FlowUVScale:{value:5.0}, 
         DispStrength:{value:0.01},
         Time:{value:0}
     }
