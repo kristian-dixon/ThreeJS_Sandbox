@@ -29,11 +29,16 @@ export class ShallowWater extends DemoBase
     mainRenderPass:ScreenspaceRenderTarget;
     copyPass:ScreenspaceRenderTarget;
 
+    grabPassScalingFactor: number = 1.0;
+
+    sobelMode = false;
+    timeScale = 0.25;
+
     materialUniforms = {
         MainTex:{value:null},
         FlowMap:{value:null},
-        FlowUVScale:{value:5.0}, 
-        DispStrength:{value:0.01},
+        FlowUVScale:{value:2.5}, 
+        DispStrength:{value:0.0075},
         Time:{value:0}
     }
 
@@ -121,17 +126,22 @@ export class ShallowWater extends DemoBase
 
         this.gui.add(this.materialUniforms.DispStrength, "value").name("Displacement Strength");
         this.gui.add(this.materialUniforms.FlowUVScale, "value").name("Flowmap Scale");
+        this.gui.add(this, "grabPassScalingFactor", 0.1, 1.0, 0.01).onFinishChange((val)=>{
+            self.copyPass.setScaleFactor(self.grabPassScalingFactor);
+        })
+        this.gui.add(this, "sobelMode");
+        this.gui.add(this, "timeScale");
     }
 
     update(options?: any): void {
         super.update(options);
-        this.materialUniforms.Time.value = this.getGlobalTime();
+        this.materialUniforms.Time.value += this.getDeltaTime() * this.timeScale;
         this.renderer.setRenderTarget(this.mainRenderPass.renderTarget);
         this.renderer.render(this.opaqueScene, this.camera);
         this.renderer.autoClear = false;
 
         this.renderer.setRenderTarget(this.copyPass.renderTarget);
-        this.blitter.copyToActiveRenderTarget(this.mainRenderPass.renderTarget.texture, this.renderer, this.camera, this.sobelBlitMat)
+        this.blitter.copyToActiveRenderTarget(this.mainRenderPass.renderTarget.texture, this.renderer, this.camera, this.sobelMode ? this.sobelBlitMat : null)
 
         this.renderer.setRenderTarget(this.mainRenderPass.renderTarget);
         this.renderer.render(this.transparentScene, this.camera);

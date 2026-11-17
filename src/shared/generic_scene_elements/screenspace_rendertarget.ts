@@ -45,4 +45,11 @@ export class ScreenspaceRenderTarget
     public get depthTexture(){
         return this.renderTarget.depthTexture;
     }
+
+    setScaleFactor(val:number){
+        this.scaleFactor = new Vector2(val,val);
+        this.renderTarget.dispose();
+        this.renderTarget = new WebGLRenderTarget(window.innerWidth * this.scaleFactor.x, window.innerHeight * this.scaleFactor.y);
+        this.dispatcher.dispatchEvent({type:"RenderTargetRebuilt"})
+    }
 }

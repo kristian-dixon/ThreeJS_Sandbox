@@ -15,10 +15,9 @@ void main()	{
 
     vec2 displacedUv = vScreenUV + displacement * DispStrength;    
 
-    
 
     vec3 baseCol = texture2D(MainTex, displacedUv).xyz;
-    vec3 col = baseCol * vec3(0.5, 0.6, 0.8);
+    vec3 col = baseCol * vec3(0.7, 0.8, 1.0);
 
     gl_FragColor = vec4(col,1.0);
     return;
