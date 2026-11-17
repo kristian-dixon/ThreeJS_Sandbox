@@ -7,6 +7,10 @@ import FlowMap from "../../shared/assets/textures/flow_map/flowmap.png"
 
 import vertexShader from "./shaders/example.vs"
 import fragShader from "./shaders/example.fs"
+
+import blitVertex from "../../shared/blitter/shaders/blit.vs"
+import blitFragSobel from "./shaders/sobel.fs"
+
 import EnvironmentMap from "../../shared/assets/textures/skyboxes/medieval_cafe_1k.hdr"
 
 import { Color, DoubleSide, EquirectangularReflectionMapping, Mesh, RepeatWrapping, Scene, ShaderMaterial, TextureLoader, Vector2, Vector3, WebGLRenderTarget, Wrapping } from "three";
@@ -20,6 +24,7 @@ export class ShallowWater extends DemoBase
     transparentScene: Scene;
     blitter: Blitter;
     camera: OrbitalCamera;
+    sobelBlitMat: ShaderMaterial;
 
     mainRenderPass:ScreenspaceRenderTarget;
     copyPass:ScreenspaceRenderTarget;
@@ -30,6 +35,11 @@ export class ShallowWater extends DemoBase
         FlowUVScale:{value:5.0}, 
         DispStrength:{value:0.01},
         Time:{value:0}
+    }
+
+    sobelUniforms={
+        map:{value:null},
+        texelSize:{value:new Vector2(0,0)}
     }
 
     initialize(options?: any) 
@@ -60,6 +70,15 @@ export class ShallowWater extends DemoBase
             uniforms:this.materialUniforms
         })
 
+        this.sobelBlitMat = new ShaderMaterial({
+            vertexShader: blitVertex,
+            fragmentShader: blitFragSobel,
+            depthTest: false,
+            depthWrite:false,
+            uniforms:this.sobelUniforms
+        })
+
+
         let loader = new GLTFLoader();
         loader.load(ExampleModel, (gltf)=>{
             let scene = gltf.scene;
@@ -81,11 +100,18 @@ export class ShallowWater extends DemoBase
                     }
                 }
             })
-
-            //this.opaqueScene.add(scene.clone());
         })
 
         this.materialUniforms.MainTex.value = this.copyPass.texture;
+        self.sobelUniforms.texelSize.value.x = 1.0/self.copyPass.renderTarget.width;
+        self.sobelUniforms.texelSize.value.y = 1.0/self.copyPass.renderTarget.height;
+        
+        this.copyPass.subscribeToRefresh(()=>{
+            self.materialUniforms.MainTex.value = self.copyPass.texture;
+            self.sobelUniforms.texelSize.value.x = 1.0/self.copyPass.renderTarget.width;
+            self.sobelUniforms.texelSize.value.y = 1.0/self.copyPass.renderTarget.height;
+        })
+
         let textureLoader = new TextureLoader();
         textureLoader.load(FlowMap, (result)=>{
             result.wrapS = RepeatWrapping; 
@@ -105,7 +131,7 @@ export class ShallowWater extends DemoBase
         this.renderer.autoClear = false;
 
         this.renderer.setRenderTarget(this.copyPass.renderTarget);
-        this.blitter.copyToActiveRenderTarget(this.mainRenderPass.renderTarget.texture, this.renderer, this.camera)
+        this.blitter.copyToActiveRenderTarget(this.mainRenderPass.renderTarget.texture, this.renderer, this.camera, this.sobelBlitMat)
 
         this.renderer.setRenderTarget(this.mainRenderPass.renderTarget);
         this.renderer.render(this.transparentScene, this.camera);

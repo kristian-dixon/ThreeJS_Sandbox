@@ -27,6 +27,10 @@ export class Blitter{
         {
             this.quad.material = material;
         }
+        else
+        {
+            this.quad.material = this.defaultMaterial;
+        }
 
         (this.quad.material as THREE.ShaderMaterial).uniforms["map"].value = src;
         renderer.setRenderTarget(dst);
